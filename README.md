@@ -1,3 +1,6 @@
+Origin
+https://github.com/seccoding/ktds-23-pms
+
 # ktds 23기 1차 프로젝트
 ## 2024-04-26 복구 대상 파일 목록
 ### 아래 목록에서 본인이 작성한 파일의 최신 브랜치(master 제외)와 비교해보고 다른 부분이 있으면 복구하고 Commit & Push
