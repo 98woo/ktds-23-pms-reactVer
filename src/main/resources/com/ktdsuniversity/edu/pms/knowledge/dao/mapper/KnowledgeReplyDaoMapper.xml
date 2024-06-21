@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.knowledge.dao.KnowledgeReplyDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeReplyVO" 
+  			   id="knowledgeReplyVOMap"
+  			   autoMapping="true">
+  		<id column="RPL_ID" property="rplId" />
+  		<association property="employeeVO"
+  					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+  			<id column="EMP_ID" property="empId" />
+  			<result column="EMP_NAME" property="empName" />
+  		</association>
+  		
+  	</resultMap>
+  	
+  	<resultMap type="com.ktdsuniversity.edu.pms.knowledge.vo.ReplyRecommandVO" 
+  		id="ReplyRecomamndVo">
+  		<id column="REP_CRTR_ID" property="repcrtrid" />
+  		<result column="REP_RPL_ID" property="reprplid" />
+  		
+  		<association property="employeeVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_ID" property="empId" />
+		</association>
+		
+  	</resultMap>
+
+	<select id="getAllReplies" 
+			parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeReplyVO" 
+			resultMap="knowledgeReplyVOMap">
+		SELECT  LEVEL
+		     , R.RPL_ID
+		     , R.RPL_PID
+		     , R.RPL_CNTNT
+		     , R.P_POST_ID
+		     , TO_CHAR(R.CRT_DT, 'YYYY-MM-DD') CRT_DT
+		     , R.CRTR_ID
+		     , TO_CHAR(R.MDF_DT, 'YYYY-MM-DD') MDF_DT
+		     , R.MDFR_ID
+		     , R.DEL_YN
+		     , E.EMP_ID
+		     , E.EMP_NAME
+		     , R.RPL_CNT
+		  FROM REPLY R
+		 INNER JOIN EMPLOYEE E
+		    ON R.CRTR_ID = E.EMP_ID
+		 START WITH R.P_POST_ID = #{pPostId}
+		   AND R.RPL_PID IS NULL
+		   AND R.DEL_YN='N'
+		CONNECT BY PRIOR R.RPL_ID = R.RPL_PID
+	</select>
+	
+	<select id="getOneReply" 
+			parameterType="string" 
+			resultMap="knowledgeReplyVOMap">
+		SELECT R.RPL_ID
+		     , R.RPL_PID
+		     , R.RPL_CNTNT
+		     , R.P_POST_ID
+		     , TO_CHAR(R.CRT_DT, 'YYYY-MM-DD') CRT_DT
+		     , R.CRTR_ID
+		     , TO_CHAR(R.MDF_DT, 'YYYY-MM-DD') MDF_DT
+		     , R.MDFR_ID
+		     , R.DEL_YN
+		     , E.EMP_ID
+		     , E.EMP_NAME
+		  FROM REPLY R
+		 INNER JOIN EMPLOYEE E
+		    ON R.CRTR_ID = E.EMP_ID
+		 WHERE R.RPL_ID = #{_parameter}
+	</select>
+	
+	<insert id="createNewKnowledgeReply"
+			parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeReplyVO">
+		INSERT INTO REPLY
+			 (RPL_ID
+			, RPL_PID
+			, RPL_CNTNT
+			, P_POST_ID
+			, CRT_DT
+			, CRTR_ID
+			, MDF_DT
+			, MDFR_ID
+			, DEL_YN)
+		VALUES
+			 (('RPL_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'),3) || '_' || LPAD(SEQ_REPLY_PK.NEXTVAL, 6, '0'))
+			, #{rplPid}
+			, #{rplCntnt}
+			, #{pPostId}
+			, SYSDATE
+			, #{crtrId}
+			, NULL
+			, NULL
+			, 'N')
+	</insert>
+	
+	<update id="deleteOneKnowledgeReply"
+			parameterType="string">
+		UPDATE REPLY
+		   SET DEL_YN = 'Y'
+		 WHERE RPL_ID = #{_parameter}
+	</update>
+	
+	<update id="modifyOneKnowledgeReply"
+			parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeReplyVO">
+		UPDATE REPLY
+		   SET RPL_CNTNT = #{rplCntnt}
+		     , MDF_DT = SYSDATE
+		 WHERE RPL_ID = #{rplId}
+	</update>
+	
+	<!--   댓글 추천 파트 -->
+	<select id="selectOneReplyRecommend"
+	 parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.ReplyRecommandVO" 
+		resultMap="ReplyRecomamndVo">
+		SELECT 
+			* FROM REPLY_RECCOMMEND r
+			INNER JOIN EMPLOYEE e 
+			ON e.EMP_ID = #{repcrtrid}
+			WHERE r.REP_RPL_ID =#{reprplid}
+	</select>
+	
+	
+	<insert id="insertOneReplyRecommend"  parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.ReplyRecommandVO" >
+		INSERT INTO PMS.REPLY_RECCOMMEND
+		(REP_REC_ID, 
+		REP_REC_YN, 
+		REP_RPL_ID, 
+		REP_CRTR_ID)
+		VALUES(('RPL_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'),3) || '_' || LPAD(SEQ_REPLYRECOMMEND_PK.NEXTVAL, 6, '0')) 
+		,'Y'  
+		,#{reprplid}
+		,#{repcrtrid})
+	</insert>
+	
+	<update id="replyRecommandCount" parameterType="string">
+		UPDATE REPLY_RECCOMMEND
+			SET   REP_REC_CNT= REP_REC_CNT + 1
+			,REP_REC_YN ='N'
+			WHERE REP_RPL_ID=#{_parameter}
+	</update>
+	
+	<update id="replyCount" parameterType="string">
+		UPDATE PMS.REPLY
+			SET   RPL_CNT=RPL_CNT+1
+			WHERE RPL_ID=#{_parameter}
+	</update>
+	
+	<!-- 댓글 --> 
+	<select id="getAllreReply" parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeReplyVO" resultMap="knowledgeReplyVOMap">
+		SELECT RPL_ID
+			,RPL_PID 
+			,RPL_CNTNT
+			,P_POST_ID
+			,CRT_DT
+			,CRTR_ID
+			,MDF_DT
+			,MDFR_ID
+			,DEL_YN
+			,RPL_CNT
+			FROM REPLY
+			WHERE  RPL_PID =#{rplPid}
+			AND DEL_YN='N'
+	</select>
+	
+	<select id="findEmpid"  parameterType="string"  resultType="string">
+		SELECT CRTR_ID FROM REPLY WHERE RPL_ID =#{_parameter}
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.knowledge.dao.KnowledgeDao">
+  
+  	<resultMap type="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeVO" 
+	id="knowledgeVOMap" autoMapping="true">
+	<id column="KNL_ID" property="knlId" /><!-- pk -->
+	<result column="RQM_ID" property="rqmId" /><!-- join value -->
+	<result column="PRJ_ID" property="prjId" /><!-- join value -->
+	<result column="EMP_ID" property="empId" /><!-- join value -->
+	<result column="REC_ID" property="recId" /><!-- join value -->
+	 
+	<!-- join table -->
+	
+	<association property="requirementVO" 
+		javaType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+			<id column="RQM_ID" property="rqmId" />
+			<result column="RQM_TTL" property="rqmTtl" />
+	</association> 
+	<!-- join table -->
+	
+	<association property="projectVO" 
+		javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectVO">
+			<id column="PRJ_ID" property="prjId" />
+			<result column="PRJ_NAME" property="prjName" />
+	</association>
+	
+	<!-- join table -->
+	
+	<association property="employeeVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_ID" property="empId" />
+	</association>
+	
+	<association property="knowledgeRecommendVO" 
+		javaType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeRecommendVO">
+			<id column="REC_ID" property="recId" />
+			<result column="REC_YN" property="recYn" />
+	</association>
+	</resultMap>
+	
+	
+	<resultMap type="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeRecommendVO" 
+	id="knowledgeRecommendVOMap" autoMapping="true">
+	<id column="REC_ID" property="recId" /><!-- pk -->
+	
+	</resultMap>
+
+  <select id="getAllKnowledgeCount" resultType="_int">
+  	SELECT COUNT(1)
+  	  FROM KNOWLEDGE
+  	 WHERE DEL_YN = 'N'
+  </select>
+  
+  <select id="getAllKnowledge" resultType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeVO">
+   SELECT KNL_ID
+			 , KNL_TTL
+			 , KNL_CNTNT
+			 , KNL_CNT
+			 , KNL_REC_CNT
+			 , CRT_DT
+			 , MDF_DT
+			 , DEL_YN
+			 , CRTR_ID
+			 , MDFR_ID
+		     , FILE_NAME
+		FROM KNOWLEDGE
+		WHERE DEL_YN = 'N'
+		ORDER BY CRT_DT DESC
+  </select>
+  
+  
+  <select id="searchAllKnowledgeCount" 
+  parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.SearchKnowledgeVO"
+  resultType="_int">
+  	SELECT COUNT(1)
+	  FROM KNOWLEDGE K
+	 WHERE K.DEL_YN = 'N'
+	 <if test='searchKeyword != null and searchKeyword != ""'>
+	 <choose>
+	 	<when test='searchType == "knlTtl"'>
+	   AND K.KNL_TTL LIKE '%' || #{searchKeyword} || '%'
+	 	</when>
+	 	<when test='searchType == "knlCntnt"'>
+	   AND K.KNL_CNTNT LIKE '%' || #{searchKeyword} || '%'		
+	 	</when>
+	 	<when test='searchType == "knlTtl_knlCntnt"'>
+	   AND (K.KNL_TTL LIKE '%' || #{searchKeyword} || '%'
+   	OR  K.KNL_CNTNT LIKE '%' || #{searchKeyword} || '%')	
+	 	</when>
+	 	<when test='searchType == "crtrId"'>
+	   AND K.CRTR_ID  LIKE '%' || #{searchKeyword} || '%'	
+	 	</when>
+	 </choose>
+	 </if>
+  </select>
+  
+  
+    <select id="searchAllKnowledge" 
+    parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.SearchKnowledgeVO" 
+    resultMap="knowledgeVOMap">
+     <include refid="Common.pagenate_header" />
+ 	SELECT K.KNL_ID
+	     , K.KNL_TTL
+	     , K.KNL_CNTNT
+	     , K.KNL_CNT
+	     , K.KNL_REC_CNT
+	     , TO_CHAR(K.CRT_DT, 'YYYY-MM-DD') AS CRT_DT
+	     , TO_CHAR(K.MDF_DT, 'YYYY-MM-DD') AS MDF_DT
+	     , K.DEL_YN
+	     , K.CRTR_ID
+	     , K.MDFR_ID
+	     , K.FILE_NAME
+	     , K.ORIGIN_FILE_NAME
+	FROM KNOWLEDGE K
+	INNER JOIN EMPLOYEE E
+	   ON E.EMP_ID = K.CRTR_ID
+	WHERE K.DEL_YN = 'N'
+<if test='searchKeyword != null and searchKeyword != ""'>
+<choose>
+	 	<when test='searchType == "knlTtl"'>
+	   AND K.KNL_TTL LIKE '%' || #{searchKeyword} || '%'
+	 	</when>
+	 <when test='searchType == "knlCntnt"'>
+	   AND K.KNL_CNTNT LIKE '%' || #{searchKeyword} || '%'		
+	 </when>
+	 <when test='searchType == "knlTtl_knlCntnt"'>
+	   AND (K.KNL_TTL LIKE '%' || #{searchKeyword} || '%'
+   	OR  K.KNL_CNTNT LIKE '%' || #{searchKeyword} || '%')	
+	 </when>
+	 <when test='searchType == "crtrId"'>
+	   AND K.CRTR_ID  LIKE '%' || #{searchKeyword} || '%'	
+	 </when>
+	 </choose>
+	 </if>
+	  ORDER BY K.CRT_DT DESC
+	 <include refid="Common.pagenate_footer" />
+  </select>
+	
+	
+
+  <insert id="insertNewKnowledge" parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeVO"> 
+	INSERT INTO KNOWLEDGE
+		 ( KNL_ID
+		 , KNL_TTL
+		 , KNL_CNTNT
+		 , KNL_CNT
+		 , KNL_REC_CNT
+		 , CRT_DT
+		 , MDF_DT
+		 , DEL_YN
+		 , CRTR_ID
+		 , MDFR_ID
+		 , FILE_NAME
+		 , ORIGIN_FILE_NAME)
+	VALUES
+	     (('KNL' || '_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'),3) || '_' || LPAD (SEQ_KNOWLEDGE_PK.NEXTVAL, 6, '0'))
+	     , #{knlTtl}
+	     , #{knlCntnt}
+	     , 0
+	     , 0
+	     , SYSDATE
+	     , NULL
+	     , 'N'
+	     , #{crtrId}
+	     , NULL
+	     , #{fileName}
+	     , #{originFileName})
+
+   </insert>
+	
+  
+  <select id="selectOneKnowledge" parameterType="string">
+	  	SELECT k.KNL_ID
+		 , k.KNL_TTL
+		 , k.KNL_CNTNT
+		 , k.KNL_CNT
+		 , k.KNL_REC_CNT
+		 ,TO_CHAR(k.CRT_DT, 'YYYY-MM-DD')   CRT_DT
+		 ,TO_CHAR(k.MDF_DT, 'YYYY-MM-DD')   MDF_DT
+		 , k.DEL_YN
+		 , k.CRTR_ID
+		 , k.MDFR_ID
+	     , k.FILE_NAME
+	     , e.EMP_ID
+		FROM KNOWLEDGE k
+		INNER JOIN EMPLOYEE e
+		ON e.EMP_ID =k.CRTR_ID
+		WHERE DEL_YN = 'N'
+		AND K.KNL_ID =#{_parameter}
+  </select>
+	
+	<!-- 조회수 -->
+	<update id="increaseViewCount" parameterType="String">
+	UPDATE KNOWLEDGE 
+	   SET KNL_CNT = KNL_CNT + 1
+	 WHERE DEL_YN = 'N'
+	   AND KNL_ID = #{_parameter}
+	</update>
+	
+	<!-- 수정 -->
+	<update id="updateOneKnowledge" parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeVO">
+		UPDATE KNOWLEDGE 
+		   SET KNL_TTL = #{knlTtl}
+		   	 , KNL_CNTNT = #{knlCntnt}
+		   	 , MDF_DT = SYSDATE
+		   	 , MDFR_ID = #{mdfrId}
+		   	 <if test='fileName != null and fileName != ""'>
+		   	 , FILE_NAME = #{fileName}
+		   	 , ORIGIN_FILE_NAME = #{originFileName}
+		   	 </if>
+		 WHERE KNL_ID = #{knlId}
+	</update>
+	
+	<!-- 삭제 -->
+	<update id="deleteOneKnowledge" parameterType="string">
+		UPDATE KNOWLEDGE 
+		   SET DEL_YN = 'Y'
+		   	 , MDF_DT = SYSDATE
+		 WHERE KNL_ID = #{knlId}
+	</update>
+	
+	<!-- 추천수 -->
+	<update id="recommendOneKnowledge" parameterType="String">
+		UPDATE KNOWLEDGE 
+		   SET KNL_REC_CNT = KNL_REC_CNT + 1
+		 WHERE DEL_YN = 'N'
+		   AND KNL_ID = #{knlId}
+	</update>
+	
+	
+	<!-- 1사원 1추천 -->
+	<select id="selectOneRecommend" 
+	parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeRecommendVO"
+	resultMap="knowledgeRecommendVOMap">
+		SELECT REC_ID
+			 , P_POST_ID
+			 , CRTR_ID
+			 , REC_YN
+		  FROM RECOMMEND 
+		 WHERE P_POST_ID = #{pPostId}
+		   AND CRTR_ID = #{crtrId}
+	</select> 
+	
+	<insert id="insertOneRecommend" parameterType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeRecommendVO">
+		INSERT INTO RECOMMEND 
+		( REC_ID
+		, P_POST_ID
+		, CRTR_ID
+		, REC_YN 
+		)
+		VALUES
+		( SEQ_RECOMMEND_PK.NEXTVAL
+		, #{pPostId}
+		, #{crtrId}
+		, 'Y'
+		)
+	</insert> 
+
+	
+	<select id="selectOneRecommendCount"
+			parameterType="String"
+			resultType="_int">
+	SELECT COUNT(1)
+  	FROM RECOMMEND
+ 	WHERE P_POST_ID = #{_parameter}
+ 	AND  REC_YN = 'Y'
+	</select>
+	
+	
+	<select id="selectManyKnowledge" parameterType="list" resultType="com.ktdsuniversity.edu.pms.knowledge.vo.KnowledgeVO">
+		SELECT FILE_NAME
+		  FROM KNOWLEDGE
+		 WHERE KNL_ID IN
+		 <foreach collection="list" item="knlId" open="(" close=")" separator=", ">
+		 	#{knlId}
+		 </foreach>
+	</select>
+	
+	<update id="deleteManyKnowledge" parameterType="list">
+		UPDATE KNOWLEDGE
+		   SET DEL_YN = 'Y'
+		     , MDF_DT = SYSDATE
+		 WHERE KNL_ID IN
+		 <foreach collection="list" item="knlId" open="(" close=")" separator=", ">
+		 	#{knlId}
+		 </foreach>
+	</update>
+	
+	<select id="findkindId" parameterType="string" resultType="string">
+		SELECT CRTR_ID
+			FROM KNOWLEDGE WHERE KNL_ID =#{_parameter}
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

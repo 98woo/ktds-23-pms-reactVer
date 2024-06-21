@@ -1,0 +1,645 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.project.dao.ProjectDao">
+
+    <resultMap type="com.ktdsuniversity.edu.pms.project.vo.ProjectVO"
+               id="projectVOMap"
+               autoMapping="true">
+        <id column="PRJ_ID" property="prjId"/>
+        <association property="prjStsCode"
+                     javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+            <id column="CMCD_ID" property="cmcdId"/>
+            <result column="CMCD_NAME" property="cmcdName"/>
+        </association>
+        <association property="deptVO"
+                     javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+            <id column="DEPT_ID" property="deptId"/>
+            <result column="DEPT_NAME" property="deptName"/>
+        </association>
+        <association property="clientVO"
+                     javaType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+            <id column="CLNT_ID" property="clntId"/>
+            <result column="CLNT_NAME" property="clntName"/>
+        </association>
+    </resultMap>
+
+    <resultMap type="com.ktdsuniversity.edu.pms.project.vo.ProjectVO"
+               id="projectTeamListMap"
+               autoMapping="true">
+        <id column="PRJ_ID" property="prjId"/>
+        <association property="prjStsCode"
+                     javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+            <id column="CMCD_ID" property="cmcdId"/>
+            <result column="CMCD_NAME" property="cmcdName"/>
+        </association>
+        <association property="deptVO"
+                     javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+            <id column="DEPT_ID" property="deptId"/>
+            <result column="DEPT_NAME" property="deptName"/>
+        </association>
+        <association property="clientVO"
+                     javaType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+            <id column="CLNT_ID" property="clntId"/>
+            <result column="CLNT_NAME" property="clntName"/>
+            <result column="CNTCN" property="cntct"/>
+            <result column="INFO" property="info"/>
+        </association>
+        <collection property="projectTeammateList"
+                    ofType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO"
+                    column="PRJ_ID">
+            <id column="PRJ_TM_ID" property="prjTmId"/>
+            <result column="TM_ID" property="tmId"/>
+            <result column="ROLE" property="role"/>
+            <association property="employeeVO"
+                         javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+                <id column="EMP_ID" property="empId"/>
+                <result column="EMP_NAME" property="empName"/>
+            </association>
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO"
+               id="projectTeammateListMap"
+               autoMapping="true">
+        <id column="PRJ_TM_ID" property="prjTmId"/>
+        <association property="employeeVO"
+                     javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+            <id column="EMP_ID" property="empId"/>
+            <result column="EMP_NAME" property="empName"/>
+            <result column="EMAIL" property="email"/>
+            <association property="departmentVO"
+                         javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+                <id column="DEPT_ID" property="deptId"/>
+                <result column="DEPT_NAME" property="deptName"/>
+            </association>
+        </association>
+    </resultMap>
+
+    <select id="selectAllProject"
+            resultMap="projectVOMap">
+        <!--            resultMap="projectVOMap">-->
+        SELECT P.PRJ_ID
+        , P.PRJ_NAME
+        , P.CLNT_INFO
+        , P.DEPT_ID
+        , P.PRJ_STS
+        , TO_CHAR(P.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+        , TO_CHAR(P.END_DT, 'YYYY-MM-DD') AS END_DT
+        , P.DEL_YN
+        , P.CRT_DT
+        , P.MDFR_ID
+        , P.MDF_DT
+        , C.CMCD_NAME
+        , D.DEPT_NAME
+        FROM PROJECT P
+        INNER JOIN DEPARTMENT D
+        ON P.DEPT_ID = D.DEPT_ID
+        INNER JOIN COMMON_CODE C
+        ON P.PRJ_STS = C.CMCD_ID
+        WHERE P.DEL_YN = 'N'
+        ORDER BY P.CRT_DT DESC
+    </select>
+
+    <select id="selectAllProjectCount">
+        SELECT COUNT(1)
+        FROM PROJECT
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <select id="searchBoard"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.SearchProjectVO"
+            resultMap="projectVOMap">
+        SELECT P.PRJ_ID
+        , P.PRJ_NAME
+        , P.CLNT_INFO
+        , P.DEPT_ID
+        , P.PRJ_STS
+        , TO_CHAR(P.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+        , TO_CHAR(P.END_DT, 'YYYY-MM-DD') AS END_DT
+        , P.DEL_YN
+        , P.CRTR_ID
+        , P.CRT_DT
+        , P.MDFR_ID
+        , P.MDF_DT
+        , C.CMCD_NAME
+        , D.DEPT_NAME
+        , CL.CLNT_NAME
+        , P.SRV_STS
+        , P.SRV_CR_DATE
+        , P.SRV_END_DATE
+        FROM PROJECT P
+        INNER JOIN DEPARTMENT D
+        ON P.DEPT_ID = D.DEPT_ID
+        INNER JOIN COMMON_CODE C
+        ON P.PRJ_STS = C.CMCD_ID
+        INNER JOIN CLIENT CL
+        ON CL.CLNT_ID = P.CLNT_INFO
+        WHERE P.DEL_YN = 'N'
+        AND C.DEL_YN = 'N'
+  		<if test='searchStatus != null and searchStatus != ""'>
+            <choose>
+                <when test='searchStatus == "all"'>
+                </when>
+                <otherwise>
+                    AND P.PRJ_STS = #{searchStatus}
+                </otherwise>
+            </choose>
+        </if>
+        <if test='employeeVO.empId != null and employeeVO.empId != ""'>
+            <choose>
+                <when test='employeeVO.admnCode == "301"'>
+                </when>
+                <otherwise>
+                    AND P.PRJ_ID IN (
+                    SELECT PRJ_ID
+                    FROM PROJECT_TEAMMATE PT
+                    WHERE PT.TM_ID = #{employeeVO.empId}
+                    AND PT.DEL_YN = 'N'
+                    )
+                </otherwise>
+            </choose>
+        </if>
+        ORDER BY P.CRT_DT DESC
+    </select>
+
+    <select id="searchProjectCount"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.SearchProjectVO"
+            resultType="_int">
+        SELECT COUNT(1)
+        FROM PROJECT P
+        INNER JOIN DEPARTMENT D
+        ON P.DEPT_ID = D.DEPT_ID
+        INNER JOIN COMMON_CODE C
+        ON P.PRJ_STS = C.CMCD_ID
+        WHERE P.DEL_YN = 'N'
+        AND D.DEL_YN = 'N'
+        AND C.DEL_YN = 'N'
+        <if test='searchStatus != null and searchStatus != ""'>
+            <choose>
+                <when test='searchStatus == "all"'>
+                </when>
+                <otherwise>
+                    AND P.PRJ_STS = #{searchStatus}
+                </otherwise>
+            </choose>
+        </if>
+        <if test='searchKeyword != null and searchKeyword != ""'>
+            <choose>
+                <when test='searchType == "project"'>
+                    AND P.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "client"'>
+                    AND P.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "department"'>
+                    AND D.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+            </choose>
+        </if>
+        <if test='employeeVO.empId != null and employeeVO.empId != ""'>
+            <choose>
+                <when test='employeeVO.admnCode == "301"'>
+                </when>
+                <otherwise>
+                    AND P.PRJ_ID IN (
+                    SELECT PRJ_ID
+                    FROM PROJECT_TEAMMATE PT
+                    WHERE PT.TM_ID = #{employeeVO.empId}
+                    AND PT.DEL_YN = 'N'
+                    )
+                </otherwise>
+            </choose>
+        </if>
+    </select>
+
+    <select id="findById"
+            parameterType="String"
+            resultMap="projectTeamListMap">
+        SELECT P.PRJ_ID
+             , P.PRJ_NAME
+             , P.CLNT_INFO
+             , P.DEPT_ID
+             , P.PRJ_STS
+             , TO_CHAR(P.STRT_DT, 'YYYY-MM-DD') STRT_DT
+             , TO_CHAR(P.END_DT, 'YYYY-MM-DD') END_DT
+             , P.DEL_YN
+             , P.CRTR_ID
+             , P.CRT_DT
+             , P.MDFR_ID
+             , P.MDF_DT
+             , C.CMCD_NAME
+             , D.DEPT_NAME
+             , PT."ROLE"
+             , PT.TM_ID
+             , E.EMP_NAME
+             , P.PRJ_MEMO
+             , CL.CLNT_NAME
+             , CL.CNTCT
+             , CL.INFO
+          FROM (SELECT PRJ_ID
+             , PRJ_NAME
+             , CLNT_INFO
+             , DEPT_ID
+             , PRJ_STS
+             , STRT_DT
+             , END_DT
+             , DEL_YN
+             , CRTR_ID
+             , CRT_DT
+             , MDFR_ID
+             , MDF_DT
+             , PRJ_MEMO
+          FROM PROJECT
+         WHERE PRJ_ID = #{_parameter}) P
+         INNER JOIN DEPARTMENT D
+            ON P.DEPT_ID = D.DEPT_ID
+         INNER JOIN COMMON_CODE C
+            ON P.PRJ_STS = C.CMCD_ID
+         INNER JOIN PROJECT_TEAMMATE PT
+            ON P.PRJ_ID = PT.PRJ_ID
+         INNER JOIN EMPLOYEE E
+            ON PT.TM_ID = E.EMP_ID
+         INNER JOIN CLIENT CL
+            ON CL.CLNT_ID = P.CLNT_INFO
+         WHERE P.DEL_YN = 'N'
+           AND PT.DEL_YN = 'N'
+    </select>
+
+    <insert id="insertNewProject"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.CreateProjectVO"
+            useGeneratedKeys="true" keyProperty="prjId" keyColumn="PRJ_ID">
+        INSERT INTO PROJECT
+        (PRJ_ID,
+        PRJ_NAME,
+        CLNT_INFO,
+        DEPT_ID,
+        PRJ_STS,
+        STRT_DT,
+        END_DT,
+        DEL_YN,
+        CRTR_ID,
+        SRV_STS,
+        PRJ_MEMO)
+        VALUES
+        (('PRJ_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_PROJECT_PK.NEXTVAL, 6, '0')),
+        #{prjName},
+        #{clntInfo},
+        #{deptId},
+        '401',
+        TO_DATE(#{strtDt}, 'YYYY-MM-DD'),
+        TO_DATE(#{endDt}, 'YYYY-MM-DD'),
+        'N',
+        #{crtrId},
+        'N',
+        #{prjMemo})
+    </insert>
+
+    <insert id="insertNewPm"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        INSERT INTO PROJECT_TEAMMATE
+        (PRJ_TM_ID,
+        PRJ_ID,
+        TM_ID,
+        ROLE,
+        DEL_YN,
+        RV_YN,
+		SRV_YN)
+        VALUES
+        (('PRJ_TM_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_PROJECT_TEAMMATE_PK.NEXTVAL, 6, '0')),
+        #{prjId},
+        #{tmId},
+        #{role},
+        'N',
+        'N',
+        'N')
+    </insert>
+
+    <update id="deleteById"
+            parameterType="String">
+        UPDATE PROJECT
+        SET DEL_YN = 'Y',
+        /* 수정자 추가 */
+        MDF_DT = SYSDATE
+        WHERE PRJ_ID = #{_parameter}
+    </update>
+
+    <select id="selectProjectTeammateCount"
+            parameterType="String">
+        SELECT COUNT(1)
+        FROM PROJECT_TEAMMATE PT
+        INNER JOIN EMPLOYEE E
+        ON PT.TM_ID = E.EMP_ID
+        WHERE PT.PRJ_ID = #{_parameter}
+        AND PT.DEL_YN = 'N'
+        AND E.WORK_STS != '204'
+    </select>
+
+    <select id="findAllProjectTeammateByProjectId"
+            parameterType="String"
+            resultMap="projectTeammateListMap">
+        SELECT PT.PRJ_TM_ID,
+        PT.PRJ_ID,
+        PT.TM_ID,
+        PT."ROLE",
+        PT.DEL_YN,
+        PT.RV_YN,
+        PT.SRV_YN,
+        E.EMP_ID,
+        E.EMP_NAME,
+        E.EMAIL,
+        D.DEPT_ID,
+        D.DEPT_NAME
+        FROM PROJECT_TEAMMATE PT
+        INNER JOIN EMPLOYEE E
+        ON PT.TM_ID = E.EMP_ID
+        INNER JOIN DEPARTMENT D
+        ON E.DEPT_ID = D.DEPT_ID
+        WHERE PT.DEL_YN = 'N'
+        AND PT.PRJ_ID = #{_parameter}
+        ORDER BY "ROLE" DESC
+    </select>
+
+    <select id="getProjectRequirementStatusList"
+            parameterType="String"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectStatusVO">
+        SELECT C.CMCD_NAME ,
+        COUNT(R.RQM_ID) AS CMCD_ID_COUNT
+        FROM PROJECT P
+        INNER JOIN REQUIREMENT R
+        ON P.PRJ_ID =R.PRJ_ID
+        RIGHT OUTER JOIN COMMON_CODE C
+        ON R.RQM_STS = C.CMCD_ID
+        WHERE C.CMCD_PID = '600'
+        AND P.PRJ_ID = #{_parameter}
+        AND P.DEL_YN = 'N'
+        AND R.DEL_YN = 'N'
+        GROUP BY C.CMCD_NAME
+    </select>
+
+
+    <select id="getProjectIssueStatusList"
+            parameterType="String"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectStatusVO">
+        SELECT C.CMCD_NAME ,
+        COUNT(I.IS_ID) AS CMCD_ID_COUNT
+        FROM PROJECT P
+        INNER JOIN REQUIREMENT R
+        ON P.PRJ_ID = R.PRJ_ID
+        INNER JOIN ISSUE I
+        ON R.RQM_ID = I.RQM_ID
+        RIGHT OUTER JOIN COMMON_CODE C
+        ON I.IS_STS = C.CMCD_ID
+        WHERE C.CMCD_PID = '700'
+        AND P.PRJ_ID = #{_parameter}
+        AND P.DEL_YN = 'N'
+        AND R.DEL_YN = 'N'
+        AND I.DEL_YN = 'N'
+        GROUP BY C.CMCD_NAME
+    </select>
+
+    <update id="updateOneProject"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.CreateProjectVO">
+        UPDATE PROJECT
+           SET PRJ_NAME = #{prjName}
+             , CLNT_INFO = #{clntInfo}
+             , DEPT_ID = #{deptId}
+             , STRT_DT = TO_DATE(#{strtDt},'YYYY-MM-DD')
+             , END_DT = TO_DATE(#{endDt},'YYYY-MM-DD')
+             , PRJ_STS = #{prjSts}
+             , MDFR_ID = #{mdfId}  
+             , MDF_DT = SYSDATE
+             , PRJ_MEMO = #{prjMemo}
+         WHERE PRJ_ID = #{prjId}
+    </update>
+
+    <update id="deletePm"
+            parameterType="String">
+        UPDATE PROJECT_TEAMMATE
+        SET DEL_YN = 'Y'
+        WHERE PRJ_ID=#{_parameter}
+        AND "ROLE"='PM'
+        AND DEL_YN = 'N'
+    </update>
+
+    <select id="findPmByProjectId"
+            parameterType="String"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        SELECT PRJ_TM_ID,
+        PRJ_ID,
+        TM_ID,
+        "ROLE",
+        DEL_YN,
+        RV_YN,
+        SRV_YN
+        FROM PROJECT_TEAMMATE
+        WHERE PRJ_ID = #{_parameter}
+        AND DEL_YN = 'N'
+        AND "ROLE" = 'PM'
+    </select>
+    
+    <select id="findPmNameByPrjId" parameterType="String" resultType="String">
+    	SELECT E.EMP_NAME
+    	  FROM EMPLOYEE E
+    	 INNER JOIN PROJECT_TEAMMATE P
+    	    ON P.TM_ID = E.EMP_ID
+    	 WHERE P.PRJ_ID = #{_parameter}
+    	   AND P."ROLE" = 'PM'
+    	   AND P.DEL_YN = 'N'
+    </select>
+
+    <select id="selectDeletedPm"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.CreateProjectVO"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.CreateProjectVO">
+        SELECT PRJ_TM_ID,
+        PRJ_ID,
+        TM_ID,
+        "ROLE",
+        DEL_YN,
+        RV_YN,
+        SRV_YN
+        FROM PROJECT_TEAMMATE
+        WHERE PRJ_ID = #{prjId}
+        AND TM_ID = #{pmId}
+        AND ROLE = 'PM'
+    </select>
+
+    <update id="restoreDeletedPm"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.CreateProjectVO">
+        UPDATE PROJECT_TEAMMATE
+        SET DEL_YN = 'N'
+        WHERE PRJ_ID = #{prjId}
+        AND TM_ID = #{pmId}
+        AND ROLE = 'PM'
+    </update>
+
+    <update id="deleteManyTeammate"
+            parameterType="list">
+        UPDATE PROJECT_TEAMMATE
+        SET DEL_YN = 'Y'
+        WHERE PRJ_TM_ID IN
+        <foreach collection="list" item="id" open="(" close=")" separator=", ">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="deleteByTeammateId"
+            parameterType="String">
+        UPDATE PROJECT_TEAMMATE
+        SET DEL_YN = 'Y'
+        WHERE PRJ_TM_ID = #{_parameter}
+    </update>
+
+    <select id="findTeammateByProjectIdAndEmployeeId"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        SELECT PRJ_TM_ID,
+        PRJ_ID ,
+        TM_ID,
+        "ROLE" ,
+        DEL_YN
+        FROM PROJECT_TEAMMATE
+        WHERE PRJ_ID = #{prjId}
+        AND TM_ID = #{tmId}
+    </select>
+
+    <update id="updateTeammateDeleteYnAndRoleByProjectTeammateId"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        UPDATE PROJECT_TEAMMATE
+        SET DEL_YN = 'N',
+        "ROLE" = #{role}
+        WHERE PRJ_TM_ID = #{prjTmId}
+    </update>
+
+    <insert id="insertNewProjectTeammate"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        INSERT INTO PROJECT_TEAMMATE
+        (PRJ_TM_ID,
+        PRJ_ID,
+        TM_ID,
+        "ROLE")
+        VALUES
+        (
+        'PRJ_TM_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_PROJECT_TEAMMATE_PK.NEXTVAL, 6, '0'),
+        #{prjId},
+        #{tmId},
+        #{role}
+        )
+    </insert>
+
+    <select id="findAllProjectTeammate"
+            resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        SELECT PRJ_TM_ID,
+        PRJ_ID ,
+        TM_ID,
+        "ROLE" ,
+        DEL_YN,
+        RV_YN,
+        SRV_YN
+        FROM PROJECT_TEAMMATE
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <select id="findAllProjectByEmployeeId"
+            parameterType="String"
+            resultMap="projectVOMap">
+        SELECT P.PRJ_ID,
+        P.PRJ_NAME,
+        P.CLNT_INFO,
+        P.DEPT_ID,
+        P.PRJ_STS,
+        P.STRT_DT,
+        P.END_DT,
+        D.DEPT_NAME,
+        C.CMCD_NAME
+        FROM PROJECT P
+        INNER JOIN DEPARTMENT D
+        ON P.DEPT_ID = D.DEPT_ID
+        INNER JOIN COMMON_CODE C
+        ON P.PRJ_STS = C.CMCD_ID
+        WHERE P.DEL_YN = 'N'
+        AND PRJ_ID IN (SELECT PRJ_ID
+        FROM PROJECT_TEAMMATE PT
+        WHERE PT.TM_ID = #{_parameter}
+        AND PT.DEL_YN = 'N')
+        ORDER BY P.CRT_DT DESC
+    </select>
+
+    <update id="updateOneTeammateReviewStatusByProjectIdAndEmployeeId"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        UPDATE PROJECT_TEAMMATE
+        SET RV_YN = 'Y'
+        WHERE PRJ_ID = #{prjId}
+        AND TM_ID = #{tmId}
+    </update>
+
+    <update id="updateOneTeammateSurveyStatusByProjectIdAndEmployeeId"
+            parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        UPDATE PROJECT_TEAMMATE
+        SET SRV_YN = 'Y'
+        WHERE PRJ_ID = #{prjId}
+        AND TM_ID = #{tmId}
+    </update>
+
+    <select id="selectTeammateRolePLCountByProjectId"
+            parameterType="String">
+        SELECT COUNT(1)
+        FROM PROJECT_TEAMMATE PT
+        WHERE PRJ_ID = #{_parameter} AND DEL_YN = 'N' AND PT."ROLE" = 'PL'
+    </select>
+    
+    <update id="updateOneProjectSurveySts"
+    		parameterType="String">
+    	UPDATE PROJECT 
+		   SET SRV_STS = 'Y'
+		 WHERE PRJ_ID = #{prjId}
+		   AND DEL_YN = 'N' 
+    </update>
+    
+    <update id="updateOneTeammateSurveySts"
+    		parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyReplyVO">
+    	UPDATE PROJECT_TEAMMATE
+		   SET SRV_YN = 'Y'
+		 WHERE PRJ_ID = #{surveyQuestionVO.prjId}
+		   AND TM_ID = #{crtrId}
+		   AND DEL_YN = 'N'
+    </update>
+    
+    <select id="getAllProjectTeammateByTmId"
+    		parameterType="String">
+    		SELECT PT.PRJ_TM_ID
+				 , PT.PRJ_ID
+				 , PT.TM_ID
+				 , PT.ROLE
+				 , PT.DEL_YN
+				 , PT.RV_YN
+				 , PT.SRV_YN
+			  FROM PROJECT_TEAMMATE PT
+			  JOIN PROJECT P
+			  	ON PT.PRJ_ID = P.PRJ_ID 
+			 WHERE TM_ID = #{crtrId}
+			   AND PT.DEL_YN = 'N'
+			 ORDER BY P.CRT_DT DESC
+    </select>
+    <select id="getPrjTmId" parameterType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO" resultType="String">
+    	SELECT PRJ_TM_ID 
+		  FROM PROJECT_TEAMMATE
+		 WHERE PRJ_ID = #{prjId}
+		   AND TM_ID = #{tmId}
+    </select>
+    
+    <select id="getAllPrjEvent" parameterType="String" resultType="com.ktdsuniversity.edu.pms.project.vo.ProjectVO">
+    	SELECT P.PRJ_NAME 
+			 , TO_CHAR(P.STRT_DT, 'YYYY-MM-DD') STRT_DT
+		     , TO_CHAR(P.END_DT, 'YYYY-MM-DD') END_DT
+		  FROM PROJECT P
+		 INNER JOIN PROJECT_TEAMMATE T
+		    ON P.PRJ_ID = T.PRJ_ID 
+		 WHERE T.TM_ID = #{_parameter}
+		   AND (P.STRT_DT > SYSDATE 
+		    OR P.END_DT > SYSDATE)
+		   AND P.DEL_YN = 'N'
+		   AND T.DEL_YN = 'N'
+    </select>
+</mapper>

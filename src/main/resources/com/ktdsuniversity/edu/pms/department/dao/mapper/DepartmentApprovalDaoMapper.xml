@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.department.dao.DepartmentApprovalDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.department.vo.DepartmentApprovalVO"
+			   id="DepartmentApprovalVOMap"
+			   autoMapping="true">
+		<id column="DEPT_APPR_ID" property="deptApprId" />
+		<association property="approvalVO"
+					 javaType="com.ktdsuniversity.edu.pms.approval.vo.ApprovalVO">
+			<id column="APPR_ID" property="apprId" />
+			<result column="APPR_DATE" property="apprDate" />
+		</association>
+		<association property="employeeVO"
+					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+			<result column="EMAIL" property="email" />
+		</association>
+	</resultMap>
+	
+	<insert id="insertDepartmentApprovalRequest" 
+			parameterType="com.ktdsuniversity.edu.pms.department.vo.DepartmentApprovalVO">
+		<selectKey keyProperty="deptApprId" resultType="string" order="BEFORE">
+				SELECT 'DEPT_APPR_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'),3) || '_' || LPAD(SEQ_DEPT_APPR_PK.NEXTVAL, 6, '0')
+				FROM DUAL
+			</selectKey>
+			
+			INSERT INTO DEPARTMENT_APPROVAL
+				( DEPT_APPR_ID
+				, DEPT_APPR_TYPE
+				, DEPT_ID
+				, DEPT_NAME
+				, DEPT_LEAD_ID
+				, DEL_YN
+				, DEPT_APPR_YN
+				, DEPT_APPR_REQTR
+				, DEPT_APPR_REASON)
+			VALUES
+				( #{deptApprId}
+				, #{deptApprType}
+				, #{deptId}
+				, #{deptName}
+				, #{deptLeadId}
+				, #{delYn}
+				, 'N'
+				, #{deptApprReqtr}
+				, #{deptApprReason})
+	</insert>	
+
+	<select id="getDepartmentApprovalByPK" parameterType="string" resultMap="DepartmentApprovalVOMap">
+		   SELECT DA.DEPT_APPR_ID
+				, DA.DEPT_APPR_TYPE
+				, DA.DEPT_ID
+				, DA.DEPT_NAME
+				, DA.DEPT_LEAD_ID
+				, DA.DEL_YN
+				, DA.DEPT_APPR_YN
+				, DA.DEPT_APPR_REQTR
+				, DA.DEPT_APPR_REASON
+				, EA.EMP_NAME EA_EMP_NAME
+				, EA.EMP_ID EA_EMP_ID
+				, EA.EMAIL EA_EMAIL
+				, EDL.EMP_NAME EDL_EMP_NAME
+				, EDL.EMP_ID EDL_EMP_ID
+				, EDL.EMAIL EDL_EMAIL
+			 FROM DEPARTMENT_APPROVAL DA
+			 JOIN EMPLOYEE EA
+			   ON DA.DEPT_APPR_REQTR = EA.EMP_ID
+			 JOIN EMPLOYEE EDL
+			   ON DA.DEPT_LEAD_ID = EDL.EMP_ID
+			WHERE DEPT_APPR_ID=#{_parameter}
+    </select>
+
+</mapper>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.supply.dao.SupplyDao">
+
+	<select id="searchSupplyAllCount"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM (SELECT SPL_ID
+		  			 , SPL_NAME
+		  			 , SPL_CTGR
+		  			 , SPL_PRICE
+		  			 , INV_QTY
+		  			 , DEL_YN
+		  			 , SPL_IMG
+		  			 , SPL_DTL
+		  			 , SPL_REGT_ID
+		  			 , SPL_MDFR_ID
+		  			 , SPL_REGT_DT
+		  			 , SPL_MDF_DT
+				  FROM SUPPLY)
+		 WHERE DEL_YN = 'N'
+	</select>
+
+	<select id="searchAllSupply"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		SELECT SPL_ID
+			 , SPL_NAME
+			 , SPL_CTGR
+			 , SPL_PRICE
+			 , INV_QTY
+			 , DEL_YN
+			 , SPL_IMG
+			 , SPL_DTL
+			 , SPL_REGT_ID
+			 , SPL_MDFR_ID
+			 , SPL_REGT_DT
+			 , SPL_MDF_DT
+		  FROM (SELECT SPL_ID
+					 , SPL_NAME
+					 , SPL_CTGR
+					 , SPL_PRICE
+					 , INV_QTY
+					 , DEL_YN
+					 , SPL_IMG
+					 , SPL_DTL
+					 , SPL_REGT_ID
+					 , SPL_MDFR_ID
+					 , SPL_REGT_DT
+					 , SPL_MDF_DT
+		  		  FROM SUPPLY)
+		 WHERE DEL_YN = 'N'
+		 ORDER BY SPL_REGT_DT DESC
+	</select>
+	
+	<select id="selectOneSupply" 
+			parameterType="String" 
+			resultType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		SELECT SPL_ID
+			 , SPL_NAME
+			 , SPL_CTGR
+			 , SPL_PRICE
+			 , INV_QTY
+			 , DEL_YN
+			 , SPL_IMG
+			 , SPL_DTL
+			 , SPL_REGT_ID
+			 , SPL_MDFR_ID
+			 , SPL_REGT_DT
+			 , SPL_MDF_DT
+		  FROM SUPPLY
+		 WHERE DEL_YN = 'N'
+		   AND SPL_ID = #{_parameter}
+	</select>
+
+	<select id="selectAllSupplyCategory"
+			resultType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		SELECT SPL_CTGR 
+		  FROM (SELECT SPL_CTGR
+		  		  FROM SUPPLY
+		  		 WHERE DEL_YN = 'N')
+		 GROUP BY SPL_CTGR
+	</select>
+	
+	<insert id="registerNewSupply" 
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		INSERT INTO SUPPLY
+		 (SPL_ID
+		, SPL_NAME
+		, SPL_CTGR
+		, SPL_PRICE
+		, INV_QTY
+		, DEL_YN
+		, SPL_IMG
+		, SPL_DTL
+		, SPL_REGT_ID
+		, SPL_MDFR_ID
+		, SPL_REGT_DT
+		, SPL_MDF_DT)
+		VALUES
+		 ('SPL_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_SUPPLY_PK.NEXTVAL, 6, '0')
+		, #{splName}
+		, #{splCtgr}
+		, #{splPrice}
+		, #{invQty}
+		, 'N'
+		, #{splImg}
+		, #{splDtl}
+		, #{splRegtId}
+		, NULL
+		, SYSDATE
+		, NULL)
+	</insert>
+
+	<update id="updateOneSupply"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		UPDATE SUPPLY 
+		   SET SPL_NAME = #{splName}
+		     , SPL_CTGR = #{splCtgr}
+		     , SPL_PRICE = #{splPrice}
+		     , INV_QTY = #{invQty}
+		     , SPL_IMG = #{splImg}
+		     , SPL_DTL = #{splDtl}
+		     , SPL_MDFR_ID = #{splMdfrId}
+		     , SPL_MDF_DT = SYSDATE
+		 WHERE SPL_ID = #{splId}
+	</update>
+	
+	<update id="updateOneSupplyStock"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		UPDATE SUPPLY 
+		   SET INV_QTY = #{invQty}
+		     , SPL_MDFR_ID = #{splMdfrId}
+		     , SPL_MDF_DT = SYSDATE
+		 WHERE SPL_ID = #{splId}
+	</update>
+	
+	<update id="deleteOneSupply" 
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+		UPDATE SUPPLY
+		   SET DEL_YN = 'Y'
+		     , SPL_MDFR_ID = #{splMdfrId}
+		     , SPL_MDF_DT = SYSDATE
+		 WHERE SPL_ID = #{splId}
+	</update>
+
+</mapper>

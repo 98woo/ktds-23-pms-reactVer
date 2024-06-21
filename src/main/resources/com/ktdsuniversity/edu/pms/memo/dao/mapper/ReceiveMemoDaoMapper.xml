@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.memo.dao.ReceiveMemoDao">
+
+    <resultMap id="receiveMemoVOMap" type="com.ktdsuniversity.edu.pms.memo.vo.ReceiveMemoVO" autoMapping="true">
+        <id column="RCV_MEMO_ID" property="rcvMemoId" />
+        <result column="SEND_MEMO_ID" property="sendMemoId" />
+        <association property="sendMemoVO" javaType="com.ktdsuniversity.edu.pms.memo.vo.SendMemoVO">
+            <id column="SEND_MEMO_ID" property="sendMemoId" />
+            <result column="SEND_ID" property="sendId" />
+            <result column="MEMO_TTL" property="memoTtl" />
+            <result column="MEMO_CNTNT" property="memoCntnt" />
+            <result column="FILE_NAME" property="fileName" />
+            <result column="ORIGIN_FILE_NAME" property="originFileName" />
+            <result column="SEND_DATE" property="sendDate" />
+            <association property="employeeVO" javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+	            <id column="SEND_EMP_ID" property="empId" />
+	            <result column="SEND_EMP_NAME" property="empName" />
+	            <result column="SEND_EMAIL" property="email" />
+	        </association>
+	        <association property="departmentVO" javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+	            <id column="SEND_DEPT_ID" property="deptId" />
+	            <result column="SEND_DEPT_NAME" property="deptName" />
+	        </association>
+        </association>
+        <association property="employeeVO" javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+            <id column="EMP_ID" property="empId" />
+            <result column="EMP_NAME" property="empName" />
+            <result column="EMAIL" property="email" />
+        </association>
+        <association property="departmentVO" javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+            <id column="DEPT_ID" property="deptId" />
+            <result column="DEPT_NAME" property="deptName" />
+        </association>
+<!--        <association property="TeamVO" javaType="com.ktdsuniversity.edu.pms.team.vo.TeamVO">-->
+<!--            <id column="TM_ID" property="tmId" />-->
+<!--            <result column="TM_NAME" property="tmName" />-->
+<!--        </association>-->
+    </resultMap>
+
+    <insert id="insertNewReceiveMemo" parameterType="list">
+         INSERT INTO RECEIVE_MEMO
+              ( RCV_MEMO_ID
+              , SEND_MEMO_ID
+              , RCV_ID
+              , RCV_CODE
+              , RCV_SAVE_YN
+              , RCV_DEL_YN)
+        SELECT 'RCV_MM' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3)
+                || '_' || LPAD(SEQ_RECEIVE_MEMO_PK.NEXTVAL, 6, '0'), RCV.*
+          FROM (
+        <foreach collection="list" item="receiveMemoVO" separator="UNION ALL">
+            SELECT
+                #{receiveMemoVO.sendMemoId} AS SEND_MEMO_ID
+              , #{receiveMemoVO.rcvId} AS RCV_ID
+              , #{receiveMemoVO.rcvCode} AS RCV_CODE
+              , 'N' AS RCV_SAVE_YN
+              , 'N' AS RCV_DEL_YN
+            FROM DUAL
+        </foreach>
+        ) RCV
+    </insert>
+
+    <select id="searchMemoAllCount" parameterType="com.ktdsuniversity.edu.pms.memo.vo.SearchMemoVO" resultType="_int">
+        SELECT COUNT(1)
+          FROM RECEIVE_MEMO RM
+         INNER JOIN EMPLOYEE E
+            ON RM.RCV_ID = E.EMP_ID
+         INNER JOIN SEND_MEMO SM
+            ON SM.SEND_MEMO_ID = RM.SEND_MEMO_ID
+         INNER JOIN DEPARTMENT D
+            ON D.DEPT_ID = E.DEPT_ID
+        <!--         INNER JOIN TEAM T-->
+        <!--            ON T.TM_ID = E.TM_ID-->
+         WHERE RM.RCV_ID = #{empId}
+           AND RM.RCV_DEL_YN = 'N'
+           AND SM.SEND_DEL_YN = 'N'
+        <if test='searchKeyword != null and searchKeyword != "" '>
+            <choose>
+                <when test='searchType == "rcv_save"'>
+                    AND RM.RCV_SAVE_YN = 'Y'
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <select id="searchAllReceiveMemo" parameterType="com.ktdsuniversity.edu.pms.memo.vo.SearchMemoVO" resultMap="receiveMemoVOMap">
+        SELECT E.EMP_ID
+             , E.EMP_NAME
+             , E.EMAIL
+             , D.DEPT_NAME
+             , SM.SEND_ID
+             , SM.MEMO_TTL
+             , SM.MEMO_CNTNT
+             , SM.FILE_NAME
+             , SM.ORIGIN_FILE_NAME
+             , TO_CHAR(SM.SEND_DATE, 'YYYY.MM.DD HH24:MI') SEND_DATE
+             , RM.RCV_MEMO_ID
+             , RM.SEND_MEMO_ID
+             , RM.RCV_ID
+             , RM.RCV_CODE
+             , RM.RCV_CODE
+             , TO_CHAR(RM.RCV_DATE, 'YYYY.MM.DD HH24:MI') RCV_DATE
+             , RM.RCV_SAVE_YN
+             , RM.RCV_DEL_YN
+          FROM RECEIVE_MEMO RM
+         INNER JOIN EMPLOYEE E
+            ON RM.RCV_ID = E.EMP_ID
+         INNER JOIN SEND_MEMO SM
+            ON SM.SEND_MEMO_ID = RM.SEND_MEMO_ID
+         INNER JOIN DEPARTMENT D
+            ON D.DEPT_ID = E.DEPT_ID
+         WHERE RM.RCV_ID = #{empId}
+           AND RM.RCV_DEL_YN = 'N'
+           AND SM.SEND_DEL_YN = 'N'
+        <if test='searchKeyword != null and searchKeyword != "" '>
+            <choose>
+                <when test='searchType == "rcv_save"'>
+                    AND RM.RCV_SAVE_YN = 'Y'
+                </when>
+            </choose>
+        </if>
+         ORDER BY SM.SEND_DATE DESC
+    </select>
+
+    <select id="selectOneReceiveMemo" parameterType="string" resultMap="receiveMemoVOMap">
+        SELECT RM.RCV_MEMO_ID
+        	 , RM.SEND_MEMO_ID
+             , RM.RCV_ID
+             , RM.RCV_CODE
+             , TO_CHAR(RM.RCV_DATE, 'YYYY.MM.DD HH24:MI') RCV_DATE
+             , RM.RCV_SAVE_YN
+             , RM.RCV_DEL_YN
+             , E.EMP_NAME
+             , E.EMAIL
+             , D.DEPT_NAME
+             , SM.SEND_MEMO_ID
+             , SM.SEND_ID
+             , SM.MEMO_TTL
+             , SM.MEMO_CNTNT
+             , SM.ORIGIN_FILE_NAME
+             , SM.FILE_NAME
+             , SM.SEND_DATE
+             , SEND_E.EMP_NAME SEND_EMP_NAME
+             , SEND_E.EMAIL SEND_EMAIL
+             , SEND_D.DEPT_NAME SEND_DEPT_NAME
+          FROM RECEIVE_MEMO RM
+         INNER JOIN EMPLOYEE E
+            ON RM.RCV_ID = E.EMP_ID
+         INNER JOIN DEPARTMENT D
+            ON E.DEPT_ID = D.DEPT_ID
+         INNER JOIN SEND_MEMO SM
+            ON SM.SEND_MEMO_ID = RM.SEND_MEMO_ID
+         INNER JOIN EMPLOYEE SEND_E
+            ON SM.SEND_ID = SEND_E.EMP_ID
+         INNER JOIN DEPARTMENT SEND_D
+            ON SEND_E.DEPT_ID = SEND_D.DEPT_ID
+         WHERE RM.RCV_MEMO_ID = #{_parameter}
+           AND RM.RCV_DEL_YN = 'N'
+    </select>
+
+    <select id="searchReceiveMemoListBySendMemoId" parameterType="string" resultType="string">
+        SELECT RCV_MEMO_ID
+          FROM RECEIVE_MEMO
+         WHERE SEND_MEMO_ID = #{_parameter}
+    </select>
+
+    <update id="updateReceiveMemoDate" parameterType="string">
+        UPDATE RECEIVE_MEMO
+           SET RCV_DATE = SYSDATE
+         WHERE RCV_MEMO_ID = #{_parameter}
+    </update>
+
+    <update id="updateSaveOneReceiveMemo" parameterType="com.ktdsuniversity.edu.pms.memo.vo.ReceiveMemoVO">
+        UPDATE RECEIVE_MEMO
+           SET RCV_SAVE_YN = #{rcvSaveYn}
+         WHERE RCV_MEMO_ID = #{rcvMemoId}
+    </update>
+
+    <update id="deleteOneReceiveMemo" parameterType="string">
+        UPDATE RECEIVE_MEMO
+           SET RCV_DEL_YN = 'Y'
+         WHERE RCV_MEMO_ID = #{_parameter}
+    </update>
+
+    <update id="deleteManyReceiveMemo" parameterType="list">
+        UPDATE RECEIVE_MEMO
+           SET RCV_DEL_YN = 'Y'
+        <foreach collection="list" item="rcvMemoId" open="(" close=")" separator=", ">
+            #{rcvMemoId}
+        </foreach>
+    </update>
+    
+    <select id="getRcvCountBySendMemoId" parameterType="string" resultType="_int">
+        SELECT COUNT(1)
+          FROM RECEIVE_MEMO
+         WHERE SEND_MEMO_ID = #{_parameter}
+           AND RCV_DATE IS NULL
+    </select>
+
+    <update id="deleteReceiveMemoBySendMemoId" parameterType="string">
+        UPDATE RECEIVE_MEMO
+           SET RCV_DEL_YN = 'Y'
+         WHERE SEND_MEMO_ID = #{_parameter}
+    </update>
+
+</mapper>

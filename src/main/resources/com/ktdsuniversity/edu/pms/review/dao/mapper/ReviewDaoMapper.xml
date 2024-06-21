@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.ktdsuniversity.edu.pms.review.dao.ReviewDao">
+	
+	<resultMap
+		type="com.ktdsuniversity.edu.pms.review.vo.ReviewVO" id="ReviewVOMap"
+		autoMapping="true">
+		<id column="RV_ID" property="rvId" />
+		<association property="projectVO"
+			javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectVO">
+			<id column="PRJ_ID" property="prjId" />
+			<result column="PRJ_NAME" property="prjName" />
+			<result column="CLNT_INFO" property="clntInfo" />
+			<result column="DEPT_ID" property="deptId" />
+			<result column="PRJ_STS" property="prjSts" />
+			<result column="STRT_DT" property="strtDt" />
+			<result column="END_DT" property="endDt" />
+		</association>
+		<association property="departmentVO"
+					 javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+			<id column="DEPT_ID" property="deptId" />
+			<result column="DEPT_NAME" property="deptName" />
+		</association>
+		<association property="projectTeammateVO"
+					 javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+			<id column="PRJ_TM_ID" property="prjTmId" />
+			<result column="TM_ID" property="tmId" />
+			<result column="ROLE" property="role" />
+			<result column="RV_YN" property="rvYn" />
+			
+		</association>
+		<association property="employeeVO"
+					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+			<result column="ADMN_CODE" property="admnCode" />
+			
+		</association>
+	</resultMap>
+
+	<insert id="insertNewReview" parameterType="com.ktdsuniversity.edu.pms.review.vo.ReviewVO">
+		INSERT INTO PROJECT_REVIEW
+			 (RV_ID
+			, RV_CNTNT
+			, PRJ_ID
+			, CRT_DT
+			, CRTR_ID
+			, MDF_DT
+			, MDFR_ID
+			, DEL_YN
+			, STAR_RATING
+			)
+		VALUES
+		 (('RV_' || TO_CHAR(SYSDATE, 'YYMMDD') || '_' || LPAD(SEQ_PROJECT_REVIEW_PK.NEXTVAL, 6, '0'))
+			, #{rvCntnt}
+			, #{prjId}
+			, SYSDATE
+			, #{crtrId}
+			, NULL
+			, NULL
+			, 'N'
+			, #{starRating}
+			)
+	</insert>
+
+
+	<select id="searchReviewAllCount" 
+   		   parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO"
+           resultType="_int">
+		  
+  		SELECT 
+  			COUNT(DISTINCT p.PRJ_ID)
+	    FROM 
+			PROJECT_TEAMMATE PT
+	        JOIN PROJECT P ON PT.PRJ_ID  = P.PRJ_ID
+	        JOIN DEPARTMENT d ON p.DEPT_ID = d.DEPT_ID  
+		WHERE 
+			pt.TM_ID = #{employeeVO.empId}
+        	AND PT.DEL_YN = 'N'
+			AND P.DEL_YN = 'N' 
+			AND P.PRJ_STS = '409'
+	        <if test='searchKeyword != null and searchKeyword !=""'>
+				<choose>
+					<when test='searchType == "prjName"'>
+						AND p.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "clntInfo"'>
+						AND p.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "deptName"'>
+						AND d.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+   </select>
+	
+	<select id="searchReview" 
+	        parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO" 
+	        resultMap="ReviewVOMap">
+		<include refid ="Common.pagenate_header"/>
+		SELECT 
+		  	DISTINCT p.PRJ_ID
+	        , p.PRJ_NAME
+	        , p.CLNT_INFO
+	        , p.DEPT_ID           
+	        , p.PRJ_STS
+	        , p.CRT_DT
+	        , TO_CHAR(p.STRT_DT, 'YYYY/MM/DD') STRT_DT
+	        , TO_CHAR(p.END_DT, 'YYYY/MM/DD') END_DT
+	        , d.DEPT_NAME
+	        , PT.RV_YN 
+	        , '${employeeVO.admnCode}' AS ADMN_CODE
+		FROM 
+			PROJECT_TEAMMATE PT
+	        JOIN PROJECT P ON PT.PRJ_ID  = P.PRJ_ID
+	        JOIN DEPARTMENT d ON p.DEPT_ID = d.DEPT_ID  
+		WHERE 
+			pt.TM_ID = #{employeeVO.empId}
+        	AND PT.DEL_YN = 'N'
+			AND P.DEL_YN = 'N' 
+			AND P.PRJ_STS = '409'
+	        <if test='searchKeyword != null and searchKeyword !=""'>
+				<choose>
+					<when test='searchType == "prjName"'>
+						AND p.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "clntInfo"'>
+						AND p.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "deptName"'>
+						AND d.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+			ORDER BY  P.CRT_DT DESC
+    	<include refid ="Common.pagenate_footer"/>
+	</select>
+
+	
+		<select id="searchAdminReviewAllCount" 
+   		   parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO"
+           resultType="_int">
+		  
+  		SELECT 
+  			COUNT(DISTINCT p.PRJ_ID)
+	    FROM 
+	        PROJECT P 
+	        JOIN DEPARTMENT d ON p.DEPT_ID = d.DEPT_ID  
+		WHERE 
+			P.DEL_YN = 'N' 
+			AND P.PRJ_STS = '409'
+	        <if test='searchKeyword != null and searchKeyword !=""'>
+				<choose>
+					<when test='searchType == "prjName"'>
+						AND p.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "clntInfo"'>
+						AND p.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "deptName"'>
+						AND d.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+   </select>
+	
+	<select id="searchAdminReview" 
+	        parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO" 
+	        resultMap="ReviewVOMap">
+		<include refid ="Common.pagenate_header"/>
+		SELECT 
+		  	DISTINCT p.PRJ_ID
+	        , p.PRJ_NAME
+	        , p.CLNT_INFO
+	        , p.DEPT_ID           
+	        , p.PRJ_STS
+	        , p.CRT_DT
+	        , TO_CHAR(p.STRT_DT, 'YYYY/MM/DD') STRT_DT
+	        , TO_CHAR(p.END_DT, 'YYYY/MM/DD') END_DT
+	        , d.DEPT_NAME
+	        , '${employeeVO.admnCode}' AS ADMN_CODE
+		FROM 
+	        PROJECT P 
+	        JOIN DEPARTMENT d ON p.DEPT_ID = d.DEPT_ID  
+		WHERE 
+			P.DEL_YN = 'N' 
+			AND P.PRJ_STS = '409'
+	        <if test='searchKeyword != null and searchKeyword !=""'>
+				<choose>
+					<when test='searchType == "prjName"'>
+						AND p.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "clntInfo"'>
+						AND p.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "deptName"'>
+						AND d.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+			ORDER BY  P.CRT_DT DESC
+    	<include refid ="Common.pagenate_footer"/>
+	</select>
+	
+   <select id="searchviewReviewCntntAllCount" 
+   		   parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO"
+           resultType="_int">
+		SELECT COUNT(pr.RV_ID)
+	          FROM PROJECT_REVIEW pr
+	          JOIN PROJECT p
+	            ON p.PRJ_ID = pr.PRJ_ID
+	         WHERE p.DEL_YN = 'N'
+	           AND p.PRJ_ID = #{prjId}
+	           AND pr.DEL_YN = 'N'
+	           AND p.PRJ_STS = '409'
+	           <if test='searchKeyword != null and searchKeyword !=""'>
+					<choose>
+						<when test='searchType == "content"'>
+							AND pr.RV_CNTNT LIKE '%' || #{searchKeyword} || '%'
+						</when>
+					</choose>
+				</if>
+   </select>
+
+	<select id="searchViewReviewCntnt" 
+	        parameterType="com.ktdsuniversity.edu.pms.review.vo.SearchReviewVO" 
+	        resultMap="ReviewVOMap">
+		<include refid ="Common.pagenate_header"/>
+			SELECT pr.RV_ID
+	             , pr.RV_CNTNT
+	          FROM PROJECT_REVIEW pr
+	          JOIN PROJECT p
+	            ON p.PRJ_ID = pr.PRJ_ID
+	         WHERE p.DEL_YN = 'N'
+	           AND p.PRJ_ID = #{prjId}
+	           AND pr.DEL_YN = 'N'
+	           AND p.PRJ_STS = '409'
+	           <if test='searchKeyword != null and searchKeyword !=""'>
+					<choose>
+						<when test='searchType == "content"'>
+							AND pr.RV_CNTNT LIKE '%' || #{searchKeyword} || '%'
+						</when>
+					</choose>
+				</if>
+    	<include refid ="Common.pagenate_footer"/>
+	</select>
+
+	<select id="viewReviewCntnt" resultMap="ReviewVOMap">
+			SELECT p.PRJ_NAME
+				 , pr.RV_CNTNT 
+				 , pr.RV_ID 
+			  FROM PROJECT_REVIEW pr
+			  JOIN PROJECT p
+			    ON p.PRJ_ID = pr.PRJ_ID
+			 WHERE pr.DEL_YN = 'N'
+	</select>
+	
+	<update id="deleteReviewViewResult" 
+			parameterType="string">
+		UPDATE PROJECT_REVIEW
+		   SET DEL_YN = 'Y'
+		 WHERE RV_ID = #{_parameter}
+	</update>
+	
+	
+	<select id="selectManyReview"
+			parameterType ="list"
+			resultType="com.ktdsuniversity.edu.pms.review.vo.ReviewVO">
+		SELECT RV_ID
+		  FROM PROJECT_REVIEW
+		 WHERE RV_ID IN 
+		<foreach collection="list" item="rvId" open="(" close=")" separator=",">
+			#{rvId}
+		</foreach>
+		   AND DEL_YN = 'N'
+	</select>
+ 
+  	<update id="deleteManyReview"
+			parameterType = "list">
+		UPDATE PROJECT_REVIEW
+		   SET DEL_YN = 'Y'
+		 WHERE RV_ID IN 
+		<foreach collection="list" item="rvId" open="(" close=")" separator=",">
+			#{rvId}
+		</foreach> 
+	</update>
+	
+	<update id="reviewResultModify"
+    			parameterType="string">
+    	UPDATE PROJECT_REVIEW
+    	   SET MDF_DT = SYSDATE
+    	     , MDFR_ID = #{empId}
+    	 WHERE RV_ID = #{reviewId}
+   	</update>
+   	
+   	<update id="updatePtRvyn" parameterType="string">
+   		UPDATE PROJECT_TEAMMATE
+   		   SET RV_YN = 'N'
+   		 WHERE TM_ID = #{empId}
+   		   AND PRJ_ID = #{prjId}
+   	</update>	
+	
+	<select id="getReviewYnByEmpIdAndPrjId"
+			parameterType="string"
+			resultType="string">
+		SELECT RV_YN
+		  FROM PROJECT_TEAMMATE
+		 WHERE TM_ID = #{empId}
+		   AND PRJ_ID = #{prjId}
+		   AND DEL_YN = 'N'
+	</select>
+	
+	<select id="getReviewResult" parameterType="string" resultMap="ReviewVOMap">
+		SELECT PR.PRJ_NAME
+			 , PR.PRJ_ID
+	    	 , RV.RV_CNTNT
+     		 , RV.CRT_DT
+		     , RV.STAR_RATING
+		     , RV.RV_ID
+		     , RV.CRTR_ID
+		     , E.EMP_NAME
+  		  FROM PROJECT_REVIEW RV
+  		  JOIN PROJECT PR
+            ON PR.PRJ_ID = RV.PRJ_ID
+          JOIN EMPLOYEE E
+            ON E.EMP_ID = RV.CRTR_ID
+         WHERE RV.PRJ_ID = #{prjId}
+           AND RV.DEL_YN = 'N'
+	</select>
+	
+	
+	<select id="getReviewResultCount" parameterType="string" resultType="_int">
+		SELECT COUNT(1)
+  		  FROM PROJECT_REVIEW 
+ 		 WHERE PRJ_ID = #{prjId}
+	</select>
+	<select id="getDoneEmpIdList" parameterType="string" resultType="Integer">
+		SELECT COUNT(1)
+		  FROM PROJECT_REVIEW
+		 WHERE PRJ_ID = #{_parameter}
+		   AND DEL_YN = 'N'
+	</select>
+</mapper>

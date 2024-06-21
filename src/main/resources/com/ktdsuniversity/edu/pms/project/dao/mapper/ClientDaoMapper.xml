@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.project.dao.ClientDao">
+	<insert id="createClient" parameterType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+		INSERT INTO CLIENT
+		 (CLNT_ID
+		, CLNT_NAME
+		, CNTCT
+		, INFO
+		, DEL_YN)
+		VALUES 
+		  (('CLNT_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_CLNT_PK.NEXTVAL, 6, '0'))
+		, #{clntName}
+		, #{cntct}
+		, #{info}
+		, 'N')
+	</insert>
+	
+	<select id="getAllClient" resultType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+		SELECT CLNT_ID
+		     , CLNT_NAME
+		     , CNTCT
+		     , INFO
+		  FROM CLIENT
+		 WHERE DEL_YN = 'N'
+	</select>
+	<select id="getClientOfProject" parameterType="String" resultType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+		SELECT CLNT_ID
+		     , CLNT_NAME
+		     , CNTCT
+		     , INFO
+		  FROM CLIENT
+		 WHERE DEL_YN = 'N'
+		   AND CLNT_ID = #{_parameter}
+	</select>
+	
+	<update id="modifyClient" parameterType="com.ktdsuniversity.edu.pms.project.vo.ClientVO">
+		UPDATE CLIENT 
+		   SET CLNT_NAME = #{clntName}
+		     , CNTCT = #{cntct}
+		     , INFO = #{info}
+		 WHERE CLNT_ID = #{clntId}
+	</update>
+</mapper>

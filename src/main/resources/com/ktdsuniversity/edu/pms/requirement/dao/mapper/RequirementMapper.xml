@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.requirement.dao.RequirementDao">
+	
+	<resultMap type="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO" 
+	id="requirementVOMap" autoMapping="true">
+	<id column="RQM_ID" property="rqmId" /><!-- pk -->
+	<!-- join table -->
+	<association property="scdStsVO" 
+		javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+			<id column="CMCD_ID" property="cmcdId" />
+			<result column="STS_NAME" property="cmcdName" />
+	</association> 
+	 
+	<!-- join table -->
+	
+	<association property="rqmStsVO" 
+		javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+			<id column="CMCD_ID" property="cmcdId" />
+			<result column="RQM_NAME" property="cmcdName" />
+	</association> 
+	<!-- join table -->
+	
+	<association property="projectVO" 
+		javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectVO">
+			<id column="PRJ_ID" property="prjId" />
+			<result column="PRJ_NAME" property="prjName" />
+			<result column="IS_YN" property="isYn" />
+			<result column="KNL_YN" property="knlYn" />
+			<result column="QA_YN" property="qaYn" />
+	</association>
+	
+	<!-- join table -->
+	<association property="dvlrpVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="DVLRP_NAME" property="empName" />
+	</association>
+	
+	<!-- join table -->
+	<association property="cfrmrVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="CFRMR_NAME" property="empName" />
+	</association>
+	
+	<!-- join table -->
+	<association property="tstrVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="TSTR_NAME" property="empName" />
+	</association>
+	
+	<!-- join table -->
+	<association property="crtrIdVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="CRTR_NAME" property="empName" />
+	</association>
+	
+	<!-- join table -->
+	<association property="mdfrVO" 
+		javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="MDFR_NAME" property="empName" />
+	</association>
+
+	</resultMap>
+	
+	<select id="getAllCount"
+		parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementSearchVO"
+	resultType="_int">
+	SELECT  COUNT(1)
+	  FROM 	REQUIREMENT R 
+	  JOIN	COMMON_CODE STS 
+	  	ON	R.SCD_STS =STS.CMCD_ID
+	  JOIN  COMMON_CODE RQM
+	  	ON  R.RQM_STS  = RQM.CMCD_ID 
+	  JOIN	PROJECT p 
+	  	ON	R.PRJ_ID = p.PRJ_ID 
+	  JOIN	EMPLOYEE DVLRP
+	    ON  R.dvlrp	= DVLRP.EMP_ID
+	  JOIN	EMPLOYEE CFRMR
+	    ON  R.CFRMR	= CFRMR.EMP_ID
+	  JOIN	EMPLOYEE TSTR
+	    ON  R.TSTR	= TSTR.EMP_ID
+	  JOIN	EMPLOYEE CRTR
+	    ON  R.CRTR_ID	= CRTR.EMP_ID
+	  LEFT  JOIN	EMPLOYEE MDFR
+	    ON  R.MDFR_ID	= MDFR.EMP_ID 
+	 WHERE	R.DEL_YN = 'N'
+	 <choose>
+		  <when test='prjId != null and prjId!= ""'>
+		   AND R.PRJ_ID = #{prjId}
+		   </when>
+		  <otherwise>
+		    <if test='empId != null and empId != ""'>
+		  AND  R.PRJ_ID IN 
+		  	(SELECT PRJ_ID 
+ 	   		   FROM PROJECT_TEAMMATE 
+ 	  		  WHERE TM_ID = #{empId}
+ 	  		  )
+ 	  		</if>
+		  </otherwise>
+		</choose>
+	 <if test='scdSts != null and scdSts != ""'>
+	   AND	R.SCD_STS=#{scdSts}
+	 </if>
+	 <if test='rqmSts != null and rqmSts != ""'>
+	   AND	R.RQM_STS=#{rqmSts}
+	 </if>
+	 ORDER	BY  R.RQM_ID DESC
+	</select>
+
+
+	<select id="getAllRequirement" 
+	resultMap="requirementVOMap">
+	SELECT  R.RQM_ID 
+		 ,	R.RQM_TTL 
+		 ,	R.RQM_CNTNT 
+		 ,	R.SCD_STS 
+		 ,	R.RQM_STS 	
+		 ,	R.PRJ_ID
+		 ,	STS.CMCD_NAME 	AS STS_NAME
+		 ,	RQM.CMCD_NAME 	AS RQM_NAME
+		 ,	P.PRJ_NAME    	AS PRJ_NAME
+		 ,	DVLRP.EMP_NAME 	AS DVLRP_NAME
+		 ,	CFRMR.EMP_NAME	AS CFRMR_NAME
+		 ,	TSTR.EMP_NAME	AS TSTR_NAME
+		 ,	CRTR.EMP_NAME	AS CRTR_NAME
+		 ,	MDFR.EMP_NAME	AS MDFR_NAME
+		 ,  P.IS_YN
+		 ,  P.KNL_YN
+		 ,	P.QA_YN
+	  FROM 	REQUIREMENT r 
+	  JOIN	COMMON_CODE STS 
+	  	ON	R.SCD_STS =STS.CMCD_ID
+	  JOIN  COMMON_CODE RQM
+	  	ON  r.RQM_STS  = RQM.CMCD_ID 
+	  JOIN	PROJECT p 
+	  	ON	r.PRJ_ID = p.PRJ_ID 
+	  JOIN	EMPLOYEE DVLRP
+	    ON  R.dvlrp	= DVLRP.EMP_ID
+	  JOIN	EMPLOYEE CFRMR
+	    ON  R.CFRMR	= CFRMR.EMP_ID
+	  JOIN	EMPLOYEE TSTR
+	    ON  R.TSTR	= TSTR.EMP_ID
+	  JOIN	EMPLOYEE CRTR
+	    ON  R.CRTR_ID	= CRTR.EMP_ID
+	  LEFT  JOIN	EMPLOYEE MDFR
+	    ON  R.MDFR_ID	= MDFR.EMP_ID  	
+	 WHERE	R.DEL_YN = 'N'
+	 ORDER	BY  R.RQM_ID DESC
+	</select>
+	
+	<select id="getAllRequirementByprjId"
+	parameterType="String"
+	resultMap="requirementVOMap">
+	SELECT  R.RQM_ID 
+		 ,	R.RQM_TTL 
+		 ,	R.RQM_CNTNT 
+		 ,	R.SCD_STS 
+		 ,	R.RQM_STS 
+		 ,	R.PRJ_ID
+		 ,  TO_CHAR(R.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+		 , 	TO_CHAR(R.END_DT, 'YYYY-MM-DD') AS END_DT
+		 ,	STS.CMCD_NAME 	AS STS_NAME
+		 ,	RQM.CMCD_NAME 	AS RQM_NAME
+		 ,	P.PRJ_NAME    	AS PRJ_NAME
+		 ,	DVLRP.EMP_NAME 	AS DVLRP_NAME
+		 ,	CFRMR.EMP_NAME	AS CFRMR_NAME
+		 ,	TSTR.EMP_NAME	AS TSTR_NAME
+		 ,	CRTR.EMP_NAME	AS CRTR_NAME
+		 ,	MDFR.EMP_NAME	AS MDFR_NAME
+	  FROM 	REQUIREMENT r 
+	  JOIN	COMMON_CODE STS 
+	  	ON	R.SCD_STS =STS.CMCD_ID
+	  JOIN  COMMON_CODE RQM
+	  	ON  r.RQM_STS  = RQM.CMCD_ID 
+	  JOIN	PROJECT p 
+	  	ON	r.PRJ_ID = p.PRJ_ID 
+	  JOIN	EMPLOYEE DVLRP
+	    ON  R.dvlrp	= DVLRP.EMP_ID
+	  JOIN	EMPLOYEE CFRMR
+	    ON  R.CFRMR	= CFRMR.EMP_ID
+	  JOIN	EMPLOYEE TSTR
+	    ON  R.TSTR	= TSTR.EMP_ID
+	  JOIN	EMPLOYEE CRTR
+	    ON  R.CRTR_ID	= CRTR.EMP_ID
+	  LEFT  JOIN	EMPLOYEE MDFR
+	    ON  R.MDFR_ID	= MDFR.EMP_ID   	
+	 WHERE	R.DEL_YN = 'N'
+	   AND 	P.PRJ_ID = #{_parameter}
+	 ORDER	BY  R.RQM_ID DESC
+	</select>
+	
+	<select id="searchAllRequirement" 
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementSearchVO"
+	resultMap="requirementVOMap">
+	<include refid="Common.pagenate_header"/>
+	SELECT  R.RQM_ID
+		 , 	R.RQM_CNTNT
+		 ,  TO_CHAR(R.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+		 , 	TO_CHAR(R.END_DT, 'YYYY-MM-DD') AS END_DT
+		 ,  R.RQM_FILE
+		 ,  R.DVLRP
+		 ,  R.CFRMR
+		 ,  R.TSTR
+		 ,  R.TEST_RSLT
+		 ,  R.SCD_STS
+		 ,  R.RQM_STS
+		 ,  TO_CHAR(R.CRT_DT, 'YYYY-MM-DD') AS CRT_DT
+		 , 	TO_CHAR(R.MDF_DT, 'YYYY-MM-DD') AS MDF_DT
+		 ,  R.CRTR_ID
+		 ,  R.MDFR_ID
+		 ,  R.PRJ_ID
+		 ,  R.RQM_TTL
+		 ,  R.RQM_ENCODE_FILE
+		 ,	STS.CMCD_NAME 	AS STS_NAME
+		 ,	RQM.CMCD_NAME 	AS RQM_NAME
+		 ,	P.PRJ_NAME    	AS PRJ_NAME
+		 ,	DVLRP.EMP_NAME 	AS DVLRP_NAME
+		 ,	CFRMR.EMP_NAME	AS CFRMR_NAME
+		 ,	TSTR.EMP_NAME	AS TSTR_NAME
+		 ,	CRTR.EMP_NAME	AS CRTR_NAME
+		 ,	MDFR.EMP_NAME	AS MDFR_NAME
+	  FROM 	REQUIREMENT R 
+	  JOIN	COMMON_CODE STS 
+	  	ON	R.SCD_STS =STS.CMCD_ID
+	  JOIN  COMMON_CODE RQM
+	  	ON  R.RQM_STS  = RQM.CMCD_ID 
+	  JOIN	PROJECT p 
+	  	ON	R.PRJ_ID = p.PRJ_ID 
+	  JOIN	EMPLOYEE DVLRP
+	    ON  R.dvlrp	= DVLRP.EMP_ID
+	  JOIN	EMPLOYEE CFRMR
+	    ON  R.CFRMR	= CFRMR.EMP_ID
+	  JOIN	EMPLOYEE TSTR
+	    ON  R.TSTR	= TSTR.EMP_ID
+	  JOIN	EMPLOYEE CRTR
+	    ON  R.CRTR_ID	= CRTR.EMP_ID
+	  LEFT  JOIN	EMPLOYEE MDFR
+	    ON  R.MDFR_ID	= MDFR.EMP_ID 
+	 WHERE	R.DEL_YN = 'N'
+	 <choose>
+		  <when test='prjId != null and prjId != ""'>
+		   AND R.PRJ_ID = #{prjId}
+		   </when>
+		  <otherwise>
+		    <if test='empId != null and empId != ""'>
+		  AND  R.PRJ_ID IN 
+		  	(SELECT PRJ_ID 
+ 	   		   FROM PROJECT_TEAMMATE 
+ 	  		  WHERE TM_ID = #{empId}
+ 	  		  )
+ 	  		</if>
+		  </otherwise>
+		</choose>
+	 <if test='scdSts != null and scdSts != ""'>
+	   AND	R.SCD_STS=#{scdSts}
+	 </if>
+	 <if test='rqmSts != null and rqmSts != ""'>
+	   AND	R.RQM_STS=#{rqmSts}
+	 </if>
+	 ORDER	BY  R.RQM_ID DESC
+	 <include refid="Common.pagenate_footer"/>
+	</select>
+	
+	
+	<select id="getOneRequirement" 
+	parameterType="String"
+	resultMap="requirementVOMap">
+SELECT  R.RQM_ID 
+	 ,	R.RQM_TTL 
+	 ,	R.RQM_CNTNT 
+	 ,	R.SCD_STS 
+	 ,	R.RQM_FILE
+	 ,	R.RQM_ENCODE_FILE
+	 ,	R.RQM_STS 
+	 ,  R.CRTR_ID
+	 ,	r.PRJ_ID
+	 , 	R.DVLRP
+	 ,	R.TSTR
+	 , 	R.CFRMR
+	 ,  TO_CHAR(R.CRT_DT, 'YYYY-MM-DD') AS CRT_DT
+	 ,  TO_CHAR(R.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+	 ,	TO_CHAR(R.END_DT, 'YYYY-MM-DD') AS END_DT
+	 ,	STS.CMCD_NAME 	AS STS_NAME
+	 ,	RQM.CMCD_NAME 	AS RQM_NAME
+	 ,	P.PRJ_NAME    	AS PRJ_NAME
+	 ,	DVLRP.EMP_NAME 	AS DVLRP_NAME
+	 ,	CFRMR.EMP_NAME	AS CFRMR_NAME
+	 ,	TSTR.EMP_NAME	AS TSTR_NAME
+	 ,	CRTR.EMP_NAME	AS CRTR_NAME
+	 ,	MDFR.EMP_NAME	AS MDFR_NAME
+  FROM 	REQUIREMENT r 
+  JOIN	COMMON_CODE STS 
+  	ON	R.SCD_STS =STS.CMCD_ID
+  JOIN  COMMON_CODE RQM
+  	ON  r.RQM_STS  = RQM.CMCD_ID 
+  JOIN	PROJECT p 
+  	ON	r.PRJ_ID = p.PRJ_ID 
+  JOIN	EMPLOYEE DVLRP
+    ON  R.dvlrp	= DVLRP.EMP_ID
+  JOIN	EMPLOYEE CFRMR
+    ON  R.CFRMR	= CFRMR.EMP_ID
+  JOIN	EMPLOYEE TSTR
+    ON  R.TSTR	= TSTR.EMP_ID
+  JOIN	EMPLOYEE CRTR
+    ON  R.CRTR_ID	= CRTR.EMP_ID
+  LEFT  JOIN	EMPLOYEE MDFR
+    ON  R.MDFR_ID	= MDFR.EMP_ID   
+ WHERE	R.RQM_ID = #{_PARAMETER}
+   AND  R.DEL_YN = 'N'
+	</select>
+	
+	
+	<insert id="insertOneRequirement"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+	INSERT INTO PMS.REQUIREMENT
+	( RQM_ID
+	, RQM_TTL
+	, RQM_CNTNT
+	, STRT_DT
+	, END_DT
+	, RQM_FILE
+	, DVLRP
+	, CFRMR
+	, TSTR
+	, TEST_RSLT
+	, SCD_STS
+	, RQM_STS
+	, CRT_DT
+	, CRTR_ID
+	, MDF_DT
+	, MDFR_ID
+	, PRJ_ID
+	, DEL_YN
+	, RQM_ENCODE_FILE)
+	VALUES
+	( ('RQM_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_RQM_PK.NEXTVAL, 6, '0'))
+	, #{rqmTtl}
+	, #{rqmCntnt}
+	, TO_DATE(#{strtDt}, 'YYYY-MM-DD')
+	, TO_DATE(#{endDt}, 'YYYY-MM-DD')
+	, #{rqmFile}
+	, #{dvlrp}
+	, #{cfrmr}
+	, #{tstr}
+	, ''
+	, #{scdSts}
+	, #{rqmSts}
+	, SYSDATE	
+	, #{crtrId}
+	, ''
+	, ''
+	, #{prjId}
+	, 'N'
+	, #{rqmEncodeFile} )
+		
+	</insert>
+	
+	<update id="updateOneRequirement"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+	UPDATE PMS.REQUIREMENT SET 
+	  RQM_CNTNT=#{rqmCntnt}
+	, STRT_DT=TO_DATE(#{strtDt}, 'YYYY-MM-DD')
+	, END_DT=TO_DATE(#{endDt}, 'YYYY-MM-DD')
+	, RQM_FILE=#{rqmFile}
+	, RQM_ENCODE_FILE=#{rqmEncodeFile}
+	, SCD_STS=#{scdSts}
+	, RQM_STS=#{rqmSts}
+	, MDF_DT=SYSDATE
+	, RQM_TTL=#{rqmTtl}
+	, DVLRP=#{dvlrp}
+	, CFRMR=#{cfrmr}
+	, TSTR=#{tstr}
+	, MDFR_ID=#{mdfrId}
+	WHERE RQM_ID=#{rqmId}
+	
+	</update>
+	
+	<update id="deleteReRequirement"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+	UPDATE PMS.REQUIREMENT SET 
+	  DEL_YN = 'Y'
+	WHERE RQM_ID=#{rqmId}
+	
+	</update>
+	
+	<update id="delayRequirement"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+	 UPDATE PMS.REQUIREMENT SET 
+	SCD_STS = '503'
+	  WHERE RQM_ID=#{rqmId}
+	</update>
+	
+	<update id="updateDelayOneRequirement"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+		UPDATE PMS.REQUIREMENT SET
+		<choose>
+			<when test='isApprove'><!-- 승인시 true 기간 1주일 연장 -->
+		SCD_STS='502',
+		END_DT=(SELECT (END_DT+7)
+		         FROM REQUIREMENT
+		        WHERE RQM_ID=#{rqmId})
+			</when>
+			<otherwise><!-- 거절버튼 클릭시 -->
+		SCD_STS='502'
+			</otherwise>
+		</choose>
+		 WHERE RQM_ID=#{rqmId}
+	</update>
+	
+	<select id="getAllRequirementByTeammateId"
+			parameterType="String"
+			resultMap="requirementVOMap">
+  		SELECT r.RQM_TTL
+	    	 , r.RQM_ID 
+	      FROM REQUIREMENT r 
+	     WHERE r.PRJ_ID  in(
+			  SELECT p.PRJ_ID 
+			    FROM PROJECT p
+			    JOIN PROJECT_TEAMMATE pt 
+			      ON P.PRJ_ID = PT.PRJ_ID
+			   WHERE PT.TM_ID = #{_parameter}
+			     AND P.IS_YN ='Y')			
+	</select>
+	
+	<update id="updateTestResult"
+	parameterType="com.ktdsuniversity.edu.pms.requirement.vo.RequirementVO">
+
+	
+	UPDATE PMS.REQUIREMENT SET 
+	TEST_RSLT=#{testRslt}
+	<choose>
+		<when test='testRslt eq "true"'>
+	,RQM_STS='605'
+	,SCD_STS='504'
+		</when>
+		<otherwise>
+	,RQM_STS='603'
+		</otherwise>
+	</choose>
+	 WHERE RQM_ID=#{rqmId}
+	</update>
+	
+	<!-- 참고용 사용X -->
+	<sql id="join">
+	  JOIN	COMMON_CODE STS 
+	  	ON	R.SCD_STS =STS.CMCD_ID
+	  JOIN  COMMON_CODE RQM
+	  	ON  r.RQM_STS  = RQM.CMCD_ID 
+	  JOIN	PROJECT p 
+	  	ON	r.PRJ_ID = p.PRJ_ID 
+	  JOIN	EMPLOYEE DVLRP
+	    ON  R.dvlrp	= DVLRP.EMP_ID
+	  JOIN	EMPLOYEE CFRMR
+	    ON  R.CFRMR	= CFRMR.EMP_ID
+	  JOIN	EMPLOYEE TSTR
+	    ON  R.TSTR	= TSTR.EMP_ID
+	  JOIN	EMPLOYEE CRTR
+	    ON  R.CRTR_ID	= CRTR.EMP_ID
+	  LEFT  JOIN	EMPLOYEE MDFR
+	    ON  R.MDFR_ID	= MDFR.EMP_ID  	
+	 </sql>
+	 
+	 <!-- 참고용 사용X -->
+	 <sql id="joinValue">
+		 ,	STS.CMCD_NAME 	AS STS_NAME
+		 ,	RQM.CMCD_NAME 	AS RQM_NAME
+		 ,	P.PRJ_NAME    	AS PRJ_NAME
+		 ,	DVLRP.EMP_NAME 	AS DVLRP_NAME
+		 ,	CFRMR.EMP_NAME	AS CFRMR_NAME
+		 ,	TSTR.EMP_NAME	AS TSTR_NAME
+		 ,	CRTR.EMP_NAME	AS CRTR_NAME
+		 ,	MDFR.EMP_NAME	AS MDFR_NAME
+	 </sql>
+	
+</mapper>

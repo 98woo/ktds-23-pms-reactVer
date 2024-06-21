@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.product.dao.ProductDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.product.vo.ProductVO" id="productVOMap"  autoMapping="true">
+		<id column="PRDT_ID" property="prdtId" />
+		<association property="productManagementVO" javaType="com.ktdsuniversity.edu.pms.product.vo.ProductManagementVO">
+			<id column="PRDT_MNG_ID" property="prdtMngId" />
+			<result column="BRRW_YN" property="brrwYn" />
+			<result column="LOST_YN" property="lostYn" />
+		</association>
+	</resultMap>
+	
+	<select id="getProductAllCount" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM PRODUCT
+		 WHERE DEL_YN = 'N'
+	</select>
+	
+	<select id="getAllProduct" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT PRDT_ID
+			 , PRDT_NAME
+			 , PRDT_CTGR
+			 , ONCE_YN
+			 , CUR_STR
+			 , DEL_YN
+		  FROM PRODUCT
+		 WHERE DEL_YN = 'N'
+	</select>
+	
+	<select id="searchProductAllCount" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM (SELECT P_I.*
+		  			 , REPLACE(P_I.PRDT_NAME, ' ', '') SEARCH_PRDT_NAME
+			 		 , REPLACE(P_I.PRDT_CTGR, ' ', '') SEARCH_PRDT_CTGR
+			 		 , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+			 	  FROM PRODUCT P_I) P
+		 WHERE DEL_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productId"'>
+		   AND PRDT_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "category"'>
+		   AND SEARCH_PRDT_CTGR LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+	
+	<select id="searchAllProduct" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		<include refid="Common.pagenate_header" />
+		SELECT *
+		  FROM (SELECT PRDT_ID
+					 , PRDT_NAME
+					 , PRDT_CTGR
+					 , ONCE_YN
+					 , CUR_STR
+					 , DEL_YN
+					 , REPLACE(PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+					 , REPLACE(PRDT_CTGR, ' ', '') AS SEARCH_PRDT_CTGR
+					 , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+		  FROM PRODUCT)
+		 WHERE DEL_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productId"'>
+		   AND PRDT_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "category"'>
+		   AND SEARCH_PRDT_CTGR LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+			</choose>
+		</if>
+		
+		<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<insert id="insertNewProduct" parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		INSERT INTO PRODUCT
+			 (PRDT_ID
+			, PRDT_NAME
+			, PRDT_CTGR
+			, ONCE_YN
+			, CUR_STR
+			, DEL_YN)
+			VALUES
+			 (#{prdtId}
+			, #{prdtName}
+			, #{prdtCtgr}
+			, #{onceYn}
+			, #{curStr}
+			, 'N')
+	</insert>
+	
+	<select id="selectOneProduct" parameterType="string" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT PRDT_ID
+			 , PRDT_NAME
+			 , PRDT_CTGR
+			 , ONCE_YN
+			 , CUR_STR
+			 , DEL_YN
+		  FROM PRODUCT
+		 WHERE PRDT_ID = #{_parameter}
+	</select>
+	
+	<update id="updateOneProduct" parameterType="string">
+		UPDATE PRODUCT 
+		   SET CUR_STR = CUR_STR - 1
+		 WHERE PRDT_ID = #{_parameter}
+	</update>
+
+	<update id="changeOneProductCnt" parameterType="string">
+		UPDATE PRODUCT 
+		   SET CUR_STR = CUR_STR + 1
+		 WHERE PRDT_ID = #{_parameter}
+	</update>
+	
+	<update id="updateOneProductCount" parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		UPDATE PRODUCT 
+		   SET CUR_STR = CUR_STR + #{curStr}
+		 WHERE PRDT_ID = #{prdtId}
+	</update>
+	
+	<update id="deleteOneProduct" parameterType="string">
+		UPDATE PRODUCT 
+		   SET DEL_YN = 'Y'
+		 WHERE PRDT_ID = #{_parameter}
+	</update>
+	
+	<update id="modifyProduct" parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		UPDATE PRODUCT 
+		   SET PRDT_NAME = #{prdtName}
+		     , PRDT_CTGR = #{prdtCtgr}
+		     , ONCE_YN = #{onceYn}
+		 WHERE PRDT_ID = #{prdtId}
+	</update>
+
+	<select id="getAllProductCategory" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT DISTINCT PRDT_CTGR, 1
+		  FROM PRODUCT
+	</select>
+	
+	<select id="getAllProductList" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT PRDT_ID
+			 , PRDT_NAME
+			 , PRDT_CTGR
+			 , ONCE_YN
+			 , CUR_STR
+			 , DEL_YN
+		  FROM PRODUCT
+		 WHERE DEL_YN = 'N'
+	</select>
+	
+	<select id="selectOneProductByPrdtName" parameterType="string" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT PRDT_ID
+			 , PRDT_NAME
+			 , PRDT_CTGR
+			 , ONCE_YN
+			 , CUR_STR
+			 , DEL_YN
+		  FROM PRODUCT
+		 WHERE PRDT_NAME = #{_parameter}
+	</select>
+  	
+	<select id="selectOnePrdtId" resultType="string">
+		SELECT 'PRDT_'||TO_CHAR(SYSDATE, 'YYMMDD') || '_' || LPAD(SEQ_PRDT_PK.NEXTVAL, 6, '0')
+		  FROM DUAL
+	</select>
+	
+	<!-- PSH0422 -->
+	<update id="changeOnePrdtStored" parameterType="string">
+		UPDATE PRODUCT
+		SET CUR_STR = CUR_STR - 1
+		WHERE PRDT_NAME = #{prdtName}
+	</update>
+	
+	<!-- YSH0424 -->
+	<select id="selectPrdtIdByPrdtName" 
+			parameterType="string" 
+			resultType="string">
+		SELECT *
+		  FROM (SELECT PRDT_ID 
+				  FROM PRODUCT
+				 WHERE PRDT_NAME = #{productVO.prdtName}
+				   AND CUR_STR > 0
+				 ORDER BY PRDT_ID)
+		 WHERE ROWNUM <![CDATA[ <= ]]> 1
+	</select>
+	
+	<select id="selectPrdtMngIdByPrdtId" 
+			parameterType="string" 
+			resultType="string">
+		SELECT PRDT_MNG_ID
+		  FROM PRODUCT_MANAGEMENT
+		 WHERE PRDT_ID = #{_parameter}
+		   AND BRRW_YN = 'N'
+		   AND LOST_YN = 'N'
+	</select>
+	
+	<select id="getAllProductName" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT DISTINCT PRDT_NAME, 1
+		  FROM PRODUCT
+		 WHERE CUR_STR > 0
+	</select>
+	
+	<select id="getProductStockAndCategory" parameterType="string" resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		SELECT CUR_STR, PRDT_CTGR
+		  FROM PRODUCT
+		 WHERE PRDT_ID = #{_parameter}
+	</select>
+	
+	<update id="changeOnePrdtStoredByPrdtId" parameterType="string">
+		UPDATE PRODUCT
+		SET CUR_STR = CUR_STR - 1
+		WHERE PRDT_ID = #{_parameter}
+	</update>
+	
+	<select id="getOneExistCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		  FROM PRODUCT
+		 WHERE PRDT_NAME = #{_parameter}
+	</select>
+	
+	<select id="searchAllProductNotReturn" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+		<include refid="Common.pagenate_header" />
+		SELECT *
+		  FROM (SELECT PRDT_ID
+					 , PRDT_NAME
+					 , PRDT_CTGR
+					 , ONCE_YN
+					 , CUR_STR
+					 , DEL_YN
+					 , REPLACE(PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+					 , REPLACE(PRDT_CTGR, ' ', '') AS SEARCH_PRDT_CTGR
+					 , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+		  FROM PRODUCT)
+		 WHERE DEL_YN = 'N'
+		   AND CUR_STR >= 1
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productId"'>
+		   AND PRDT_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "category"'>
+		   AND SEARCH_PRDT_CTGR LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+			</choose>
+		</if>
+		
+		<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<select id="searchProductAllNotReturnCount" 
+			parameterType="com.ktdsuniversity.edu.pms.product.vo.ProductVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM (SELECT P_I.*
+		  			 , REPLACE(P_I.PRDT_NAME, ' ', '') SEARCH_PRDT_NAME
+			 		 , REPLACE(P_I.PRDT_CTGR, ' ', '') SEARCH_PRDT_CTGR
+			 		 , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+			 	  FROM PRODUCT P_I) P
+		 WHERE DEL_YN = 'N'
+		   AND CUR_STR >= 1
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productId"'>
+		   AND PRDT_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "category"'>
+		   AND SEARCH_PRDT_CTGR LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+	
+</mapper>

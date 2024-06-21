@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.login.dao.CommuteDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.login.vo.CommuteVO" id="commuteVOMap" autoMapping="true">
+		<id column="CMMT_ID" property="cmmtId" />
+		<association property="employeeVO" javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+		</association>
+	</resultMap>
+
+	<select id="getAllCommuteData" 
+			parameterType="com.ktdsuniversity.edu.pms.login.vo.CommuteVO"
+			resultMap="commuteVOMap">
+			SELECT C.CMMT_ID
+				 , TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') CMMT_DATE
+				 , TO_CHAR(C.CMMT_TIME, 'HH24:MI:SS') CMMT_TIME
+				 , TO_CHAR(C.FNSH_TIME, 'HH24:MI:SS') FNSH_TIME
+				 , E.EMP_NAME
+				 , C.EMP_ID
+				 , C.DEL_YN
+			  FROM COMMUTE C
+			  JOIN EMPLOYEE E
+			    ON C.EMP_ID = E.EMP_ID
+			<where>
+				<if test='commuteType == "today" '>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "oneMonth"'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 30, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "twoMonth"'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 60, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "thrMonth" or commuteType == null'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 90, 'YYYY-MM-DD')
+				</if>
+			</where>
+			    <if test='searchKeyword != null and searchKeyword != ""'>
+				<choose>
+					<when test='searchType == "cmmtDate"'>
+			 AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "empName"'>
+			 AND E.EMP_NAME LIKE '%' || #{searchKeyword} || '%'
+					</when>
+					<when test='searchType == "empId"'>
+			 AND C.EMP_ID LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+				</if>
+			<if test="empId != null">
+			AND C.EMP_ID =#{empId}
+			</if>	
+			 ORDER BY C.CMMT_TIME DESC
+	</select>
+	
+	<select id="getAllCommuteDataByEmpId"
+			parameterType="com.ktdsuniversity.edu.pms.login.vo.CommuteVO"
+			resultMap="commuteVOMap">
+			SELECT C.CMMT_ID
+				 , TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') CMMT_DATE
+				 , TO_CHAR(C.CMMT_TIME, 'HH24:MI:SS') CMMT_TIME
+				 , TO_CHAR(C.FNSH_TIME, 'HH24:MI:SS') FNSH_TIME
+				 , E.EMP_NAME 
+				 , C.EMP_ID
+				 , C.DEL_YN
+			  FROM COMMUTE C
+			  JOIN EMPLOYEE E
+				ON C.EMP_ID = E.EMP_ID
+			<where>
+				<if test='commuteType == "today" or commuteType == null'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "oneMonth"'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 30, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "twoMonth"'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 60, 'YYYY-MM-DD')
+				</if>
+				<if test='commuteType == "thrMonth"'>
+					AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') >= TO_CHAR(SYSDATE - 90, 'YYYY-MM-DD')
+				</if>
+			</where>
+			<if test='searchKeyword != null and searchKeyword != ""'>
+				<choose>
+					<when test='searchType == "cmmtDate"'>
+			 			AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') LIKE '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</if>
+			   AND E.EMP_ID = #{empId}
+			 ORDER BY C.CMMT_TIME DESC
+	</select>
+	
+	<select id="getOneCommuteDataByEmpIdToday">
+	SELECT C.CMMT_ID
+		 , TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') CMMT_DATE
+		 , TO_CHAR(C.CMMT_TIME, 'HH24:MI:SS') CMMT_TIME
+		 , TO_CHAR(C.FNSH_TIME, 'HH24:MI:SS') FNSH_TIME
+		 , C.EMP_ID
+		 , C.DEL_YN
+	  FROM COMMUTE C
+	 WHERE C.EMP_ID =#{_parameter}
+	   AND TO_CHAR(C.CMMT_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+	   AND C.DEL_YN='N'
+	</select>
+	
+	<insert id="insertCommuteIn"
+		parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		INSERT INTO COMMUTE
+		(CMMT_ID
+		, CMMT_DATE
+		, CMMT_TIME
+		, FNSH_TIME
+		, EMP_ID
+		, DEL_YN)
+		VALUES
+		(SEQ_CMMT_PK.NEXTVAL
+		, SYSDATE
+		, SYSDATE
+		, NULL
+		, #{_parameter}
+		, 'N')
+	</insert>
+	
+	<update id="updateCommuteLeaveWork" parameterType="String">
+		UPDATE PMS.COMMUTE
+		   SET FNSH_TIME=SYSDATE
+		 WHERE TO_CHAR(CMMT_DATE,'YYYY-MM-DD') =  TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		   AND EMP_ID=#{_parameter}
+	</update>
+	
+</mapper>

@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.survey.dao.SurveyQuestionDao">
+
+  	<resultMap type="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO" 
+  	           id="SurveyQuestionVOMap"
+  	           autoMapping="true">
+		<id column="SRV_ID" property="srvId" />
+		<association property="projectVO"
+					 javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectVO">
+			<id column="PRJ_ID" property="prjId" />
+			<result column="PRJ_NAME" property="prjName" />
+			<result column="CLNT_INFO" property="clntInfo" />
+			<result column="DEPT_ID" property="deptId" />
+			<result column="PRJ_STS" property="prjSts" />
+			<result column="STRT_DT" property="strtDt" />
+			<result column="END_DT" property="endDt" />
+			<result column="DEL_YN" property="delYn" />
+		</association>
+		<association property="projectTeammateVO"
+					 javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+			<id column="PRJ_TM_ID" property="prjTmId" />
+			<result column="TM_ID" property="tmId" />
+			<result column="ROLE" property="role" />
+		</association>
+		<association property="departmentVO"
+					 javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+			<id column="DEPT_ID" property="deptId" />
+			<result column="DEPT_NAME" property="deptName" />
+		</association>
+		<association property="employeeVO"
+					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+		</association>
+		<association property="commonCodeVO"
+                     javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+            <id column="CMCD_ID" property="cmcdId"/>
+            <result column="CMCD_NAME" property="cmcdName"/>
+        </association>
+	</resultMap>
+	
+	<resultMap type="com.ktdsuniversity.edu.pms.project.vo.ProjectSurveyQuestionVO"
+               id="projectVOMap"
+               autoMapping="true">
+        <id column="PRJ_ID" property="prjId"/>
+        <association property="prjStsCode"
+                     javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+            <id column="CMCD_ID" property="cmcdId"/>
+            <result column="CMCD_NAME" property="cmcdName"/>
+        </association>
+        <association property="deptVO"
+                     javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+            <id column="DEPT_ID" property="deptId"/>
+            <result column="DEPT_NAME" property="deptName"/>
+        </association>
+        <association property="projectTeammateVO"
+        			 javaType="com.ktdsuniversity.edu.pms.project.vo.ProjectTeammateVO">
+        	<id column="PRJ_TM_ID" property="prjTmId"/>
+        	<result column="SRV_YN" property="srvYn"/>
+        </association>
+    </resultMap>
+    
+    <select id="searchTeammate"
+    		parameterType="com.ktdsuniversity.edu.pms.survey.vo.SearchSurveyVO"
+    		resultMap="projectVOMap">
+    	SELECT PT.TM_ID,
+			   PT.SRV_YN 
+		  FROM PROJECT P
+		  JOIN PROJECT_TEAMMATE PT
+		    ON P.PRJ_ID = PT.PRJ_ID 
+		 WHERE P.DEL_YN = 'N'
+		   AND P.PRJ_ID IN (SELECT PRJ_ID
+							  FROM PROJECT_TEAMMATE PT
+							 WHERE PT.TM_ID = #{empId}
+							   AND PT.DEL_YN = 'N')
+		   AND PT.TM_ID = #{empId}
+    </select>
+
+	<select id="getAllSurvey" resultMap="SurveyQuestionVOMap">
+		SELECT DISTINCT p.PRJ_ID
+			 , p.PRJ_NAME
+			 , p.CLNT_INFO
+			 , p.DEPT_ID
+			 , p.PRJ_STS
+			 , TO_CHAR(p.STRT_DT, 'YYYY/MM/DD') STRT_DT
+			 , TO_CHAR(p.END_DT, 'YYYY/MM/DD') END_DT
+			 , d.DEPT_NAME
+		  FROM PROJECT p
+		  JOIN DEPARTMENT d
+		    ON d.DEPT_ID = p.DEPT_ID
+		  LEFT JOIN SURVEY_QUESTION sq
+		    ON sq.PRJ_ID = p.PRJ_ID
+		 WHERE p.DEL_YN = 'N'
+		   AND p.PRJ_STS = '409'
+	</select>
+	
+	<select id="selectOneSurvey" parameterType="String" resultMap="SurveyQuestionVOMap">
+		SELECT sq.SRV_ID
+			 , sq.PRJ_ID
+			 , sq.SRV_QST
+			 , sq.CRTR_ID
+			 , sq.MDFR_ID
+			 , sq.MDF_DT
+			 , sq.DEL_YN
+			 , sq.SEQ
+			 , sq.TYPE_YN
+			 , p.PRJ_ID
+			 , p.PRJ_NAME
+			 , d.DEPT_NAME
+			 , pt.TM_ID
+			 , pt.ROLE
+			 , e.EMP_NAME
+		  FROM (SELECT SRV_ID
+		  			 , PRJ_ID
+		  			 , SRV_QST
+		  			 , CRTR_ID
+		  			 , MDFR_ID
+		  			 , MDF_DT
+		  			 , DEL_YN
+		  			 , SEQ
+		  			 , TYPE_YN
+		  		  FROM SURVEY_QUESTION) sq
+		  JOIN PROJECT p
+		    ON p.PRJ_ID = sq.PRJ_ID
+		  JOIN DEPARTMENT d
+		    ON d.DEPT_ID = p.DEPT_ID
+		  JOIN PROJECT_TEAMMATE pt
+		    ON pt.PRJ_ID = p.PRJ_ID
+		  JOIN EMPLOYEE e
+		    ON e.EMP_ID = pt.TM_ID
+		 WHERE sq.PRJ_ID = #{_parameter}
+		   AND pt.ROLE = 'PM'
+		   <!-- AND ROWNUM = 1 -->
+		   AND sq.DEL_YN = 'N'
+		 ORDER BY sq.SEQ ASC
+	</select>
+	
+	<insert id="insertNewSurveyQuestion" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+	
+		<selectKey keyProperty="srvId" order="BEFORE" resultType="string">
+			SELECT 'SRV_QST_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_SURVEY_QUESTION_PK.NEXTVAL, 6, '0')
+			  FROM DUAL
+		</selectKey>
+	
+		INSERT INTO SURVEY_QUESTION
+		 (SRV_ID
+		, PRJ_ID
+		, SRV_QST
+		, CRTR_ID
+		, MDFR_ID
+		, MDF_DT
+		, DEL_YN
+		, SEQ
+		, TYPE_YN)
+		VALUES
+		 (#{srvId}
+		, #{prjId}
+		, #{srvQst}
+		, #{crtrId}
+		, NULL
+		, NULL
+		, 'N'
+		, #{seq}
+		, #{typeYn})
+	</insert>
+	
+	<select id="getOneSurvey" parameterType="String" resultMap="SurveyQuestionVOMap">
+		SELECT SRV_ID
+			 , PRJ_ID
+			 , SRV_QST
+			 , CRTR_ID
+			 , MDFR_ID
+			 , TO_CHAR(MDF_DT, 'YYYY/MM/DD') MDF_DT
+			 , DEL_YN
+			 , SEQ
+			 , TYPE_YN
+		  FROM SURVEY_QUESTION
+		 WHERE DEL_YN = 'N'
+		   AND SRV_ID = #{_parameter}
+		 ORDER BY SEQ ASC
+	</select>
+	
+	<update id="insertSurveyBody" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+		UPDATE SURVEY_QUESTION
+		   SET SRV_QST = #{srvQst}
+		     , TYPE_YN = #{typeYn}
+		 WHERE SRV_ID = #{srvId}
+	</update>
+	
+	<update id="modifyOneSurvey" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+		UPDATE SURVEY_QUESTION
+		   SET SRV_QST = #{srvQst}
+		     , MDFR_ID = #{mdfrId}
+		     , MDF_DT = SYSDATE
+		     , SEQ = #{seq}
+		     , TYPE_YN = #{typeYn}
+		 WHERE SRV_ID = #{srvId}
+	</update>
+	
+	<update id="modifyOneSurveyExceptBody" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+		UPDATE SURVEY_QUESTION
+		   SET SEQ = #{seq}
+		     , TYPE_YN = #{typeYn}
+		 WHERE SRV_ID = #{srvId}
+	</update>
+	
+	<select id="getAllSurveys" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SearchSurveyVO"
+			resultMap="SurveyQuestionVOMap">
+		SELECT SRV_ID
+			 , PRJ_ID
+			 , SRV_QST
+			 , CRTR_ID
+			 , MDFR_ID
+			 , MDF_DT
+			 , DEL_YN
+			 , SEQ
+			 , TYPE_YN
+		  FROM SURVEY_QUESTION
+		 WHERE PRJ_ID = #{prjId}
+		   AND DEL_YN = 'N'
+		 ORDER BY SEQ ASC
+	</select>
+	
+ 	<select id="getOneSurveyForWrite" 
+ 			parameterType="String" 
+ 			resultMap="SurveyQuestionVOMap">
+		SELECT sq.SRV_ID
+			 , sq.PRJ_ID
+			 , sq.SRV_QST
+			 , sq.CRTR_ID
+			 , sq.MDFR_ID
+			 , sq.MDF_DT
+			 , sq.DEL_YN
+			 , sq.SEQ
+			 , sq.TYPE_YN
+			 , sqp.SQP_ID
+			 , sqp.SQP_CNTNT
+			 , sqp.NEXT_ID
+			 , sqp.DEL_YN
+			 , sqp.SEQ
+		  FROM (SELECT SRV_ID
+		  			 , PRJ_ID
+		  			 , SRV_QST
+		  			 , CRTR_ID
+		  			 , MDFR_ID
+		  			 , MDF_DT
+		  			 , DEL_YN
+		  			 , SEQ
+		  			 , TYPE_YN
+		  		  FROM SURVEY_QUESTION) sq
+		  JOIN SURVEY_QUESTION_PICK sqp
+		    ON sqp.SRV_ID = sq.SRV_ID
+		 WHERE sq.PRJ_ID = #{_parameter}
+		   AND ROWNUM = 1
+		   AND sq.DEL_YN = 'N'
+		   AND sqp.DEL_YN = 'N'
+	</select>
+	
+	<select id="getAllQuestions" 
+			parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO"
+			resultMap="SurveyQuestionVOMap">
+		SELECT SRV_ID
+			 , PRJ_ID
+			 , SRV_QST
+			 , CRTR_ID
+			 , MDFR_ID
+			 , MDF_DT
+			 , DEL_YN
+			 , SEQ
+			 , TYPE_YN
+		  FROM SURVEY_QUESTION
+		 WHERE PRJ_ID = #{prjId}
+		   AND DEL_YN = 'N'
+		 ORDER BY SEQ ASC
+	</select>
+	
+	<select id="getAllQuestionsByPrjId" parameterType="String" resultMap="SurveyQuestionVOMap">
+		SELECT SRV_ID
+			 , PRJ_ID
+			 , SRV_QST
+			 , CRTR_ID
+			 , MDFR_ID
+			 , MDF_DT
+			 , DEL_YN
+			 , SEQ
+			 , TYPE_YN
+		  FROM SURVEY_QUESTION
+		 WHERE PRJ_ID = #{_parameter}
+		   AND DEL_YN = 'N'
+		 ORDER BY SEQ ASC
+	</select>
+	
+	<select id="searchProjectCount"
+			parameterType="com.ktdsuniversity.edu.pms.survey.vo.SearchSurveyVO"
+			resultType="_int">
+		SELECT COUNT(DISTINCT p.PRJ_ID)
+		  FROM PROJECT p 
+		  LEFT JOIN DEPARTMENT d 
+		    ON d.DEPT_ID = p.DEPT_ID
+		  LEFT JOIN COMMON_CODE cc 
+		    ON cc.CMCD_ID = p.PRJ_STS
+		  LEFT JOIN SURVEY_QUESTION sq
+		    ON sq.PRJ_ID = p.PRJ_ID
+		 WHERE p.DEL_YN = 'N'
+		   AND d.DEL_YN = 'N'
+		   AND cc.DEL_YN = 'N'
+		   AND p.PRJ_STS = '409'
+			<if test='searchStatus != null and searchStatus != ""'>
+	            <choose>
+	                <when test='searchStatus == "all"'>
+	                </when>
+	                <otherwise>
+	                    AND P.PRJ_STS = #{searchStatus}
+	                </otherwise>
+	            </choose>
+        	</if>
+		   <if test='searchKeyword != null and searchKeyword != ""'>
+            <choose>
+                <when test='searchType == "project"'>
+                    AND p.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "client"'>
+                    AND p.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "department"'>
+                    AND d.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+            </choose>
+	        </if>
+	        <if test='employeeVO.empId != null and employeeVO.empId != ""'>
+	            <choose>
+	                <when test='employeeVO.admnCode == "301"'>
+	                </when>
+	                <otherwise>
+	                    AND p.PRJ_ID IN (
+	                    SELECT PRJ_ID
+	                    FROM PROJECT_TEAMMATE pt
+	                    WHERE pt.TM_ID = #{employeeVO.empId}
+	                    AND pt.DEL_YN = 'N'
+	                    )
+	                </otherwise>
+	            </choose>
+	        </if>
+	</select>
+
+	<select id="searchBoard"
+			parameterType="com.ktdsuniversity.edu.pms.survey.vo.SearchSurveyVO"
+			resultMap="projectVOMap">
+		<include refid="Common.pagenate_header"/>
+		SELECT DISTINCT P.PRJ_ID
+		     , P.PRJ_NAME
+		     , P.CLNT_INFO
+		     , P.DEPT_ID
+		     , P.PRJ_STS
+		     , TO_CHAR(P.STRT_DT, 'YYYY-MM-DD') AS STRT_DT
+		     , TO_CHAR(P.END_DT, 'YYYY-MM-DD') AS END_DT
+		     , P.DEL_YN
+		     , P.CRT_DT
+		     , D.DEPT_NAME
+		     , PT.SRV_YN
+		     , C.CMCD_NAME
+		     , P.SRV_CR_DATE
+			 , P.SRV_END_DATE
+		  FROM PROJECT P
+		  LEFT JOIN DEPARTMENT D
+		    ON P.DEPT_ID = D.DEPT_ID
+		  LEFT JOIN PROJECT_TEAMMATE PT
+		    ON PT.PRJ_ID = P.PRJ_ID
+		  LEFT JOIN COMMON_CODE C
+		    ON P.PRJ_STS = C.CMCD_ID
+		  LEFT JOIN SURVEY_QUESTION SQ
+			ON SQ.PRJ_ID = P.PRJ_ID
+		 WHERE P.DEL_YN = 'N'
+		   AND D.DEL_YN = 'N'
+		   AND C.DEL_YN = 'N'
+<!-- 		   <if test='searchKeyword != null and searchKeyword != ""'>
+            <choose>
+                <when test='searchType == "project"'>
+           AND P.PRJ_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "client"'>
+           AND P.CLNT_INFO LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test='searchType == "department"'>
+           AND D.DEPT_NAME LIKE '%' || #{searchKeyword} || '%'
+                </when>
+            </choose>
+	        </if> -->
+	        <if test='employeeVO.empId != null and employeeVO.empId != ""'>
+	            <choose>
+	                <when test='employeeVO.admnCode == "301"'>
+	                </when>
+	                <otherwise>
+	       AND P.PRJ_ID IN (SELECT PRJ_ID
+		                      FROM PROJECT_TEAMMATE PT
+		                     WHERE PT.TM_ID = #{employeeVO.empId}
+		                       AND PT.DEL_YN = 'N')
+	                </otherwise>
+	            </choose>
+	        </if>
+	        ORDER BY P.CRT_DT DESC
+        	<include refid="Common.pagenate_footer"/>
+	</select>
+
+	<update id="deleteOneSurvey" 
+			parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+		UPDATE SURVEY_QUESTION
+		   SET MDFR_ID = #{mdfrId}
+		     , MDF_DT = SYSDATE
+		     , DEL_YN = 'Y'
+		 WHERE SRV_ID = #{srvId}
+	</update>
+	
+	<select id="getOneSrvQuestionVOBySrvId"
+			parameterType="String">
+		SELECT SRV_ID
+			 , PRJ_ID
+			 , SRV_QST
+			 , CRTR_ID
+			 , MDFR_ID
+			 , MDF_DT
+			 , DEL_YN
+			 , SEQ
+			 , TYPE_YN
+		  FROM SURVEY_QUESTION
+		 WHERE SRV_ID = #{srvId}
+	</select>
+	
+	<select id="getRoleNoneCount"
+			parameterType="String">
+		SELECT COUNT(1)
+		  FROM PROJECT_TEAMMATE
+		 WHERE PRJ_ID = #{_parameter}
+		   AND ROLE = 'NONE'
+	</select>
+	<select id="surveyQuestionDao"
+			parameterType="String">
+		SELECT COUNT(1)
+		  FROM PROJECT_TEAMMATE
+		 WHERE PRJ_ID = #{_parameter}
+		   AND ROLE = 'NONE'
+		   AND SRV_YN = 'Y'
+	</select>
+
+</mapper>

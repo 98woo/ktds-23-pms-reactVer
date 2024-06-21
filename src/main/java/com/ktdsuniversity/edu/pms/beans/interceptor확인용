@@ -1,0 +1,76 @@
+RecordScreenAccessAfterLoginInterceptor 
+화면 접근기록을 체크하기위해서 세션이 있을경우 해당 유저 정보를 찍고 없으면 기록이 안되요
+=================================================================================================================================	
+
+RestrictAccessAfterLoginInterceptor
+	세션에 값이 있으면 로그인페이지 접근을 막는 interceptor
+=================================================================================================================================	
+
+LoginInterceptor
+	로그인 체크
+	
+=================================================================================================================================	
+TempSessionInterceptor
+	세션구현시 임시로 관리자 세션을 구현하기 위해 강사님이 만들어줌 -> 삭제
+	
+::::code:::: 
+package com.ktdsuniversity.edu.pms.beans;
+
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class TempSessionInterceptor implements HandlerInterceptor {
+
+	private boolean enableTempSession;
+	private String tempEmpId;
+	private String tempEmpName;
+
+	public boolean isEnableTempSession() {
+		return enableTempSession;
+	}
+
+	public void setEnableTempSession(boolean enableTempSession) {
+		this.enableTempSession = enableTempSession;
+	}
+
+	public String getTempEmpId() {
+		return tempEmpId;
+	}
+
+	public void setTempEmpId(String tempEmpId) {
+		this.tempEmpId = tempEmpId;
+	}
+
+	public String getTempEmpName() {
+		return tempEmpName;
+	}
+
+	public void setTempEmpName(String tempEmpName) {
+		this.tempEmpName = tempEmpName;
+	}
+
+	@Override
+	public boolean preHandle(HttpServletRequest request,
+			HttpServletResponse response, Object handler) throws Exception {
+
+		if (this.enableTempSession
+				&& request.getSession().getAttribute("_LOGIN_USER_") == null) {
+			EmployeeVO employeeVO = new EmployeeVO();
+			employeeVO.setEmpId(tempEmpId);
+			employeeVO.setEmpName(tempEmpName);
+
+			request.getSession().setAttribute("_LOGIN_USER_", employeeVO);
+		}
+		return true;
+	}
+
+}
+
+=================================================================================================================================	
+CustomHttpSessionListener
+ 세션 종료(20분)전에 수행되는 로직 
+ 로그인 로그아웃기록 , 퇴근기록 시간비교

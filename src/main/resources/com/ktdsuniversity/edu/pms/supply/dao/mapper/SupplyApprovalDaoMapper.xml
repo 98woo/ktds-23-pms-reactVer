@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.supply.dao.SupplyApprovalDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.supply.vo.SupplyApprovalVO"
+			   id="SupplyApprovalVOMap"
+			   autoMapping="true">
+		<id column="SPL_APPR_ID" property="splApprId" />
+		<association property="approvalVO"
+					 javaType="com.ktdsuniversity.edu.pms.approval.vo.ApprovalVO">
+			<id column="APPR_ID" property="apprId" />
+			<result column="APPR_DATE" property="apprDate" />
+		</association>
+		<association property="employeeVO"
+					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+			<result column="EMAIL" property="email" />
+		</association>
+	</resultMap>
+	
+	<select id="searchSupplyAllApprovalLogCount"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM (SELECT sa.SPL_APPR_ID
+					 , sa.SPL_APPR_TYPE
+					 , sa.SPL_ID
+					 , sa.SPL_NAME
+					 , sa.SPL_CTGR
+					 , sa.INV_QTY
+					 , sa.SPL_APPR_REQTR
+					 , sa.DEL_YN
+					 , sa.SPL_APPR_YN
+					 , sa.SPL_RQST_TYPE
+					 , sa.SPL_RQST_QTY
+					 , a.APPR_DATE
+					 , e.EMP_NAME
+					 , e.EMAIL
+				  FROM SUPPLY_APPROVAL sa 
+				  JOIN APPROVAL a 
+				    ON a.APPR_INFO = sa.SPL_APPR_ID
+				  JOIN EMPLOYEE e
+				    ON e.EMP_ID = sa.SPL_APPR_REQTR)
+		 WHERE DEL_YN = 'N'
+	</select>
+
+	<select id="searchAllApprovalLog"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultMap="SupplyApprovalVOMap">
+		SELECT SPL_APPR_ID
+			 , SPL_APPR_TYPE
+			 , SPL_ID
+			 , SPL_NAME
+			 , SPL_CTGR
+			 , INV_QTY
+			 , SPL_APPR_REQTR
+			 , DEL_YN
+			 , SPL_APPR_YN
+			 , SPL_RQST_TYPE
+			 , SPL_RQST_QTY
+			 , TO_CHAR(APPR_DATE, 'YYYY-MM-DD') APPR_DATE
+			 , EMP_NAME
+			 , EMAIL
+		  FROM (SELECT sa.SPL_APPR_ID
+					 , sa.SPL_APPR_TYPE
+					 , sa.SPL_ID
+					 , sa.SPL_NAME
+					 , sa.SPL_CTGR
+					 , sa.INV_QTY
+					 , sa.SPL_APPR_REQTR
+					 , sa.DEL_YN
+					 , sa.SPL_APPR_YN
+					 , sa.SPL_RQST_TYPE
+					 , sa.SPL_RQST_QTY
+					 , a.APPR_DATE
+					 , e.EMP_NAME
+					 , e.EMAIL
+				  FROM SUPPLY_APPROVAL sa 
+				  JOIN APPROVAL a 
+				    ON a.APPR_INFO = sa.SPL_APPR_ID
+				  JOIN EMPLOYEE e
+				    ON e.EMP_ID = sa.SPL_APPR_REQTR)
+		 WHERE DEL_YN = 'N'
+		<if test="empId != null and empId != ''">
+		   AND SPL_APPR_REQTR = #{empId}
+		</if>
+		 ORDER BY APPR_DATE DESC
+	</select>
+
+	<insert id="insertSupplyApprovalRequest"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SupplyApprovalVO">
+		
+		<selectKey keyProperty="splApprId" resultType="string" order="BEFORE">
+			SELECT 'SPL_APPR_' || SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_SUPPLY_APPROVAL_PK.NEXTVAL, 6, '0')
+			  FROM DUAL
+		</selectKey>
+		
+		INSERT INTO SUPPLY_APPROVAL
+		 (SPL_APPR_ID
+		, SPL_APPR_TYPE
+		, SPL_ID
+		, SPL_NAME
+		, SPL_CTGR
+		, SPL_PRICE
+		, INV_QTY
+		, SPL_IMG
+		, SPL_DTL
+		, SPL_APPR_REQTR
+		, DEL_YN
+		, SPL_APPR_YN
+		, SPL_RQST_TYPE
+		, SPL_RQST_QTY)
+		VALUES
+		 (#{splApprId}
+		, #{splApprType}
+		, #{splId}
+		, #{splName}
+		, #{splCtgr}
+		, #{splPrice}
+		, #{invQty}
+		, #{splImg}
+		, #{splDtl}
+		, #{splApprReqtr}
+		, #{delYn}
+		, 'N'
+		, #{splRqstType}
+		, #{splRqstQty})
+	</insert>
+	
+	<select id="getSupplyApprovalByPK" parameterType="string" resultMap="SupplyApprovalVOMap">
+
+		SELECT S.SPL_APPR_ID
+			 , S.SPL_APPR_TYPE
+			 , S.SPL_ID
+			 , S.SPL_NAME
+			 , S.SPL_CTGR
+			 , S.SPL_PRICE
+			 , S.INV_QTY
+			 , S.SPL_IMG
+			 , S.SPL_DTL
+			 , S.SPL_APPR_REQTR
+			 , S.DEL_YN
+			 , S.SPL_APPR_YN
+			 , S.SPL_RQST_TYPE
+			 , S.SPL_RQST_QTY
+			 , E.EMP_NAME
+		  FROM SUPPLY_APPROVAL S
+		  JOIN EMPLOYEE E
+		    ON E.EMP_ID= S.SPL_APPR_REQTR
+		 WHERE SPL_APPR_ID = #{_parameter}
+	</select>
+	
+	<update id="updateOneSupplyApprovalYnToYByPK" parameterType="string">
+		UPDATE SUPPLY_APPROVAL
+		   SET SPL_APPR_YN = 'Y'
+		 WHERE SPL_APPR_ID = #{_parameter}
+	</update>
+
+</mapper>

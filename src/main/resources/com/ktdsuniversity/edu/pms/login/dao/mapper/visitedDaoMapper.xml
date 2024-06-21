@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.login.dao.VisitedDao">
+	<update id="insertOneEmpVisitedHistory"
+			parameterType="com.ktdsuniversity.edu.pms.login.vo.VisitedVO">
+			INSERT INTO VISITED_HISTORY
+			 (ACCS_ID
+			, EMP_ID
+			, ACCS_URL
+			, ACCS_DT
+			, DEL_YN)
+			VALUES
+			('VH' || '_' ||TO_CHAR(SYSDATE, 'YYMMDD') || '_' || LPAD(SEQ_VSTD_HT_PK.NEXTVAL, 6, '0') 
+			, #{empId}
+			, #{accsUrl}
+			, SYSDATE
+			, 'N')
+	</update>
+</mapper>

@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.employee.dao.EmployeeDao">
+
+
+	<resultMap type="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO"
+			   id="employeeVOMap"
+			   autoMapping="true">
+		<id column="EMP_ID" property="empId"/>
+		<association property="commonCodeVO"
+					 javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+			<id column="CMCD_ID" property="cmcdId"/>
+			<result column="CMCD_NAME" property="cmcdName"/>
+		</association>
+		<association property="departmentVO"
+					 javaType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+			<id column="DEPT_ID" property="deptId"/>
+			<result column="DEPT_NAME" property="deptName"/>
+			<result column="DEPT_LEAD_ID" property="deptLeadId"/>
+		</association>
+		<association property="jobVO"
+					 javaType="com.ktdsuniversity.edu.pms.job.vo.JobVO">
+			<id column="JOB_ID" property="jobId"/>
+			<result column="JOB_NAME" property="jobName"/>
+		</association>
+		<association property="teamVO"
+					 javaType="com.ktdsuniversity.edu.pms.team.vo.TeamVO">
+			<id column="TM_ID" property="tmId"/>
+			<result column="TM_NAME" property="tmName"/>
+			<result column="TM_LEAD_ID" property="tmLeadId"/>
+			
+		</association>
+
+	</resultMap>
+	<resultMap type="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO"
+			   id="employeeVOMapByCommonCode"
+			   autoMapping="true">
+		<id column="EMP_ID" property="empId" />
+		<association property="commonCodeVO"
+					 javaType="com.ktdsuniversity.edu.pms.commoncode.vo.CommonCodeVO">
+			<id column="CMCD_ID" property="cmcdId"/>
+		  <result column="CMCD_NAME" property="cmcdName"/>
+		</association>
+	</resultMap>	
+	
+	<select id="findEmployeesByTeamId"
+			parameterType="string"
+			resultMap="employeeVOMapByCommonCode">
+		SELECT E.EMP_ID 
+			 , E.EMP_NAME
+			 , E.EMAIL
+			 , E.CNTCT
+			 , C.CMCD_NAME
+			 , E.PRFL
+		  FROM EMPLOYEE E
+		 INNER JOIN ASSIGNMENT A
+		    ON E.EMP_ID = A.EMP_ID
+		 INNER JOIN COMMON_CODE C
+		    ON E.PSTN_ID = C.CMCD_ID
+		 WHERE A.TM_ID = #{_parameter}
+		   AND A.DEL_YN = 'N'	
+		   AND E.WORK_STS != '204'	
+	</select>
+	
+
+	<select id="getAllEmployeeCount" 
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM EMPLOYEE
+		 WHERE WORK_STS != '204'	
+	</select>
+
+	<select id="searchEmployeeAllCount" 
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.SearchEmployeeVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM EMPLOYEE E
+		  JOIN DEPARTMENT D
+			ON D.DEPT_ID = E.DEPT_ID
+		  JOIN JOB J 
+		    ON J.JOB_ID = E.JOB_ID
+		 WHERE E.WORK_STS != '204'	
+		  <if test='searchKeyWord != null and searchKeyWord != "" '>
+		  	<choose>
+		  		<when test='searchType == "employee_name"'>
+		  		AND E.EMP_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  		<when test='searchType == "department_name"'>
+		  		AND D.DEPT_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  		<when test='searchType == "job_name"'>
+		  		AND J.JOB_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  	</choose>
+		  </if>
+	</select> 
+
+	<select id="getAllEmployee" 
+			resultMap="employeeVOMap">
+	SELECT E.EMP_ID
+		 , E.EMP_NAME
+		 , E.WORK_STS
+		 , E.SAL_YEAR
+		 , E.PRFL
+		 , TO_CHAR(E.HIRE_DT, 'YYYY-MM-DD')HIRE_DT 
+		 , E.HIRE_DT
+		 , TO_CHAR(E.END_DT, 'YYYY-MM-DD')END_DT
+		 , TO_CHAR(E.REST_ST_DT,'YYYY-MM-DD' ) END_DT
+		 , TO_CHAR(E.REST_END_DT,'YYYY-MM-DD' ) END_DT 
+		 , E.CNTCT
+		 , E.ADDR
+		 , TO_CHAR(E.BRTH,'YYYY-MM-DD' )BRTH  
+		 , E.EMAIL
+		 , E.MNGR_YN
+		 , E.ADMN_CODE
+		 , E.DEPT_ID
+		 , E.JOB_ID
+		 , E.PSTN_ID
+		 , E.PWD
+		 , E.LGN_TRY
+		 , E.SALT
+		 , TO_CHAR(E.PWD_CN_DT,'YYYY-MM-DD' ) PWD_CN_DT
+		 , TO_CHAR(E.LGN_TRY_DT,'YYYY-MM-DD HH:MM:SS' ) LGN_TRY_DT
+		 , E.LGN_YN
+		 , D.DEPT_NAME
+		 , T.TM_ID
+		 , T.TM_NAME
+	  FROM EMPLOYEE E 
+	  LEFT JOIN DEPARTMENT D 
+	    ON D.DEPT_ID = E.DEPT_ID 
+	  LEFT JOIN TEAM T
+	    ON E.TM_ID = T.TM_ID
+	 WHERE E.WORK_STS != '204'
+	 ORDER BY E.HIRE_DT DESC
+	  
+	</select>
+	
+	
+	<select id="getNewEmployeeList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeInfoVO">
+		SELECT
+			E.EMP_ID
+			 , E.EMP_NAME
+			 , E.WORK_STS
+			 , C2.CMCD_NAME AS WORK_STS_NAME
+			 , E.SAL_YEAR
+			 , TO_CHAR(E.HIRE_DT, 'YYYY-MM-DD')HIRE_DT 
+			 , EXTRACT(YEAR FROM SYSDATE) - EXTRACT(YEAR FROM E.HIRE_DT) AS HIRE_YEAR
+			 , E.CNTCT
+			 , E.ADDR
+			 , TO_CHAR(E.BRTH,'YYYY-MM-DD' )BRTH  
+			 , E.EMAIL
+			 , E.MNGR_YN
+			 , E.ADMN_CODE
+			 , E.PRFL
+			 , E.ORIGIN_PRFL_FILE_NAME
+			 , E.DEPT_ID
+			 , D.DEPT_NAME 
+			 , E.JOB_ID
+			 , J.JOB_NAME
+			 , E.PSTN_ID
+			 , C.CMCD_NAME AS PSTN_NAME
+			 , T.TM_ID
+			 , T.TM_NAME
+			FROM 	EMPLOYEE E
+		    JOIN DEPARTMENT D
+		    ON D.DEPT_ID = E.DEPT_ID
+		    JOIN JOB J
+		    ON J.JOB_ID = E.JOB_ID
+		    JOIN COMMON_CODE C
+		    ON C.CMCD_ID = E.PSTN_ID
+		    JOIN COMMON_CODE C2
+		  	ON C2.CMCD_ID = E.WORK_STS
+		    LEFT JOIN TEAM T
+		    ON E.TM_ID = T.TM_ID
+		    WHERE E.WORK_STS != '204'
+	 		ORDER BY E.HIRE_DT DESC
+	</select>
+	
+	
+	<select id="searchAllEmployee" 
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.SearchEmployeeVO"
+			resultMap="employeeVOMap">
+	<include refid="Common.pagenate_header" />
+	SELECT E.EMP_ID
+		 , E.EMP_NAME
+		 , E.WORK_STS
+		 , E.SAL_YEAR
+		 , E.PRFL
+		 , TO_CHAR(E.HIRE_DT, 'YYYY-MM-DD')HIRE_DT 
+		 , E.HIRE_YEAR
+		 , TO_CHAR(E.END_DT, 'YYYY-MM-DD')END_DT
+		 , TO_CHAR(E.REST_ST_DT,'YYYY-MM-DD' ) REST_ST_DT
+		 , TO_CHAR(E.REST_END_DT,'YYYY-MM-DD' ) REST_END_DT 
+		 , E.CNTCT
+		 , E.ADDR
+		 , TO_CHAR(E.BRTH,'YYYY-MM-DD' )BRTH  
+		 , E.EMAIL
+		 , E.MNGR_YN
+		 , E.ADMN_CODE
+		 , E.DEPT_ID
+		 , E.JOB_ID
+		 , E.PSTN_ID
+		 , E.PWD
+		 , E.LGN_TRY
+		 , E.SALT
+		 , TO_CHAR(E.PWD_CN_DT,'YYYY-MM-DD' ) PWD_CN_DT
+		 , TO_CHAR(E.LGN_TRY_DT,'YYYY-MM-DD HH:MM:SS' ) LGN_TRY_DT
+		 , E.LGN_YN
+		 , D.DEPT_NAME 
+		 , J.JOB_NAME
+		 , T.TM_NAME
+	  FROM EMPLOYEE E 
+	  JOIN DEPARTMENT D 
+	    ON D.DEPT_ID = E.DEPT_ID
+	  JOIN JOB J
+	    ON J.JOB_ID = E.JOB_ID
+	  LEFT JOIN TEAM T
+	    ON E.TM_ID = T.TM_ID
+	 WHERE E.WORK_STS != '204'	
+	 <if test='searchKeyWord != null and searchKeyWord !="" '>
+		  	<choose>
+		  		<when test='searchType == "employee_name"'>
+		  		AND E.EMP_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  		<when test='searchType == "department_name"'>
+		  		AND D.DEPT_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  		<when test='searchType == "job_name"'>
+		  		AND J.JOB_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  		<when test='searchType == "team_name"'>
+		  		AND T.TM_NAME LIKE '%' || #{searchKeyWord} || '%'
+		  		</when>
+		  	</choose>
+		  </if>
+		  ORDER BY E.HIRE_DT DESC
+	<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<select id="getDeptIdByEmployeeId"
+			parameterType="string"
+			resultType="string">
+		SELECT DEPT_ID
+		  FROM EMPLOYEE
+		 WHERE EMP_ID = #{_parameter}		
+	</select>
+
+	
+	<select id="getOneEmployee" 
+			parameterType="string" 
+			resultMap="employeeVOMap">
+	SELECT E.EMP_ID
+		 , E.EMP_NAME
+		 , E.WORK_STS
+		 , C2.CMCD_NAME AS WORK_STS_NAME
+		 , E.SAL_YEAR
+		 , E.PRFL
+		 , TO_CHAR(E.HIRE_DT, 'YYYY-MM-DD')HIRE_DT 
+		 , EXTRACT(YEAR FROM SYSDATE) - EXTRACT(YEAR FROM E.HIRE_DT) AS HIRE_YEAR
+		 , TO_CHAR(E.END_DT, 'YYYY-MM-DD')END_DT
+		 , TO_CHAR(E.REST_ST_DT,'YYYY-MM-DD' ) END_DT
+		 , TO_CHAR(E.REST_END_DT,'YYYY-MM-DD' ) END_DT 
+		 , E.CNTCT
+		 , E.ADDR
+		 , TO_CHAR(E.BRTH,'YYYY-MM-DD' )BRTH  
+		 , E.EMAIL
+		 , E.MNGR_YN
+		 , E.ADMN_CODE
+		 , E.DEPT_ID
+		 , E.JOB_ID
+		 , E.PSTN_ID
+		 , C.CMCD_NAME AS PSTN_NAME
+		 , E.PWD
+		 , E.LGN_TRY
+		 , E.SALT
+		 , TO_CHAR(E.PWD_CN_DT,'YYYY-MM-DD' ) PWD_CN_DT
+		 , TO_CHAR(E.LGN_TRY_DT,'YYYY-MM-DD HH:MM:SS' ) LGN_TRY_DT
+		 , E.LGN_YN
+		 , D.DEPT_NAME 
+		 , D.DEPT_LEAD_ID
+		 , J.JOB_NAME
+		 , T.TM_ID
+		 , T.TM_LEAD_ID
+		 , T.TM_NAME
+	  FROM EMPLOYEE E 
+	  JOIN DEPARTMENT D
+	    ON D.DEPT_ID = E.DEPT_ID
+	  JOIN JOB J
+	    ON J.JOB_ID = E.JOB_ID
+	  JOIN COMMON_CODE C
+	    ON C.CMCD_ID = E.PSTN_ID
+	  JOIN COMMON_CODE C2
+	  	ON C2.CMCD_ID = E.WORK_STS
+	  LEFT JOIN TEAM T
+	    ON E.TM_ID = T.TM_ID
+	 WHERE E.EMP_ID = #{_parameter}
+	   AND E.WORK_STS != '204'	  
+	</select>
+	
+	<select id="getEmployeeInfo" parameterType="String"  resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeInfoVO">
+		SELECT
+			E.EMP_ID
+		 , E.EMP_NAME
+		 , E.WORK_STS
+		 , C2.CMCD_NAME AS WORK_STS_NAME
+		 , E.SAL_YEAR
+		 , TO_CHAR(E.HIRE_DT, 'YYYY-MM-DD')HIRE_DT 
+		 , EXTRACT(YEAR FROM SYSDATE) - EXTRACT(YEAR FROM E.HIRE_DT) AS HIRE_YEAR
+		 , E.CNTCT
+		 , E.ADDR
+		 , TO_CHAR(E.BRTH,'YYYY-MM-DD' )BRTH  
+		 , E.EMAIL
+		 , E.MNGR_YN
+		 , E.ADMN_CODE
+		 , E.PRFL
+		 , E.ORIGIN_PRFL_FILE_NAME
+		 , E.DEPT_ID
+		 , D.DEPT_NAME 
+		 , E.JOB_ID
+		 , J.JOB_NAME
+		 , E.PSTN_ID
+		 , C.CMCD_NAME AS PSTN_NAME
+		 , T.TM_ID
+		 , T.TM_NAME
+		FROM 	EMPLOYEE E
+	    JOIN DEPARTMENT D
+	    ON D.DEPT_ID = E.DEPT_ID
+	    JOIN JOB J
+	    ON J.JOB_ID = E.JOB_ID
+	    JOIN COMMON_CODE C
+	    ON C.CMCD_ID = E.PSTN_ID
+	    JOIN COMMON_CODE C2
+	  	ON C2.CMCD_ID = E.WORK_STS
+	    LEFT JOIN TEAM T
+	    ON E.TM_ID = T.TM_ID
+	    WHERE E.EMP_ID = #{_parameter}
+	    AND E.WORK_STS != '204'	  
+	</select>
+
+	<update id="modifyEmployee" 
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		UPDATE EMPLOYEE
+		   SET EMP_NAME = #{empName}
+			 , WORK_STS = #{workSts}
+			 , SAL_YEAR = #{salYear}
+			 <if test='prfl != null and prfl != "" '>
+			 , PRFL = #{prfl}
+			 </if>
+			 , HIRE_YEAR =# {hireYear}
+			 , END_DT  =# {emdDt}
+			 , REST_ST_DT = #{restStDt}
+			 , REST_END_DT = #{restEndDt}
+			 , CNTCT = #{cntct}
+			 , ADDR = #{addr}
+			 , BRTH = #{brth}
+			 , EMAIL = #{email}
+			 , PWD = #{newPwd}
+			 , MNGR_YN = #{mngrYn}
+			 , ADMN_CODE = #{admnCode}
+			 , DEPT_ID = #{deptId}
+			 , JOB_ID = #{jobId}
+			 , PSTN_ID = #{pstnId}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	
+	<update id="modifyPwd" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeInfoVO">
+		UPDATE EMPLOYEE
+		SET <if test='newPwd != null and !newPwd.isEmpty()' >
+			PWD = #{newPwd}
+		  , SALT = #{salt}
+		  </if>
+		WHERE EMP_ID = #{empId}
+
+	</update>
+	
+	<update id="modifyOneEmployee" 
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		UPDATE EMPLOYEE
+		   SET EMP_NAME = #{empName}
+			 , WORK_STS = #{workSts}
+			 , CNTCT = #{cntct}
+			 , ADDR = #{addr}
+			 , JOB_ID = #{jobId}
+			 <if test='newPwd != null and !newPwd.isEmpty()' >
+			 , PWD = #{newPwd}
+			 , SALT = #{salt}
+			 </if>
+			 , BRTH = TO_DATE(#{brth}, 'YYYY-MM-DD HH24:MI:SS')
+			 , EMAIL = #{email}
+			 , HIRE_YEAR = #{hireYear}
+			 , DEPT_ID = #{deptId}
+			 , PSTN_ID = #{pstnId}
+			 , MNGR_YN = #{mngrYn}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	    <select id="getEmployeeByDeptId" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+        SELECT E.EMP_ID 
+             , E.EMP_NAME 
+             , E.WORK_STS 
+             , E.EMAIL 
+             , E.JOB_ID 
+             , E.TM_ID 
+             , D.DEPT_ID 
+             , D.DEPT_NAME
+             , T.TM_ID 
+             , T.TM_NAME 
+        FROM EMPLOYEE E
+        INNER JOIN DEPARTMENT D
+           ON E.DEPT_ID = D.DEPT_ID 
+        INNER JOIN TEAM T
+           ON E.TM_ID = T.TM_ID 
+         WHERE D.DEPT_ID = #{_parameter}
+    </select>
+	
+	<update id="deleteEmployeeById"
+			parameterType ="string">
+		UPDATE EMPLOYEE 
+   		   SET WORK_STS = '204'
+   		     , END_DT = SYSDATE
+ 		 WHERE EMP_ID = #{empId} 
+	</update>
+
+	<insert id="createEmployee"
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeInfoVO">
+		INSERT INTO EMPLOYEE
+		 (EMP_ID
+		, EMP_NAME
+		, HIRE_DT
+		, CNTCT
+		, ADDR
+		, BRTH
+		, EMAIL
+		, MNGR_YN
+		, DEPT_ID
+		, JOB_ID
+		, PSTN_ID
+		, PWD
+		, SALT)
+		VALUES
+		 (SUBSTR(TO_CHAR(SYSDATE, 'YYYYMM'), 3) || LPAD(SEQ_EMP_PK.NEXTVAL, 3, '0')
+		, #{empName}
+		, TO_DATE(#{hireDt}, 'YYYY-MM-DD HH24:MI:SS')
+		, #{cntct}
+		, #{addr}
+		, TO_DATE(#{brth}, 'YYYY-MM-DD HH24:MI:SS')
+		, SUBSTR(TO_CHAR(SYSDATE, 'YYYYMM'), 3) || LPAD(SEQ_EMP_PK.NEXTVAL, 3, '0') || '@pms.com'
+		, #{mngrYn}
+		, #{deptId}
+		, #{jobId}
+		, #{pstnId}
+		, #{pwd}
+		, #{salt})
+	</insert>
+		
+	
+	<insert id="createEmployeeProfile" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeInfoVO">
+		INSERT INTO EMPLOYEE
+		(PRFL
+	   , ORIGIN_PRFL_NAME)
+	   VALUES
+	   (#{prfl}
+	  , #{origin_prfl_name})
+	</insert>
+	
+	<select id="searchEmpDeptId"
+			parameterType="string"
+			resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		SELECT *
+		  FROM EMPLOYEE E
+		 WHERE DEPT_ID = #{_parameter}
+		   AND WORK_STS = '201'
+	</select>
+
+
+	<select id="saltByEmp"
+			parameterType="string"
+			resultType="string">
+		SELECT SALT
+		  FROM EMPLOYEE
+		 WHERE EMP_ID = #{empId}
+	</select>
+	
+	<select id="getOneEmpIdIsExist"
+			parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO"
+			resultType="_int">
+			SELECT COUNT(1) 
+			  FROM EMPLOYEE
+			 WHERE EMP_ID = #{empId}
+			   AND WORK_STS != '204'
+	</select>
+	
+	<select id="getEmployeeAllTeam" parameterType="string" resultType="com.ktdsuniversity.edu.pms.team.vo.TeamVO">
+		SELECT T.TM_ID
+			 , T.TM_CR_DT
+			 , T.TM_NAME
+			 , T.DEPT_ID
+			 , T.TM_LEAD_ID
+		  FROM TEAM T
+		 INNER JOIN EMPLOYEE E
+		    ON T.TM_ID = E.TM_ID
+		 WHERE E.EMP_ID = #{_parameter}
+		   AND T.DEL_YN = 'N'
+	</select>
+	
+	<update id="deleteTeam" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		UPDATE TEAM
+		   SET DEL_YN = 'Y'
+		 WHERE EMP_ID = #{empId}
+		   AND TM_ID = #{teamVO.tmId}
+	</update>
+	
+	<insert id="addTeam" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		INSERT INTO TEAM
+		 (TM_ID
+		, TM_NAME
+		, TM_CR_DT
+		, TM_LEAD_ID
+		, DEPT_ID
+		, DEL_YN)
+		VALUES 
+		 ('ASGN_'||SUBSTR(TO_CHAR(SYSDATE, 'YYYYMMDD'), 3) || '_' || LPAD(SEQ_TEAM_PK.NEXTVAL, 6, '0')
+		, #{teamVO.tmName}
+		, SYSDATE
+		, #{teamVO.tmLeadId}
+		, #{deptId}
+		, 'N')
+	</insert>
+	<select id="findEmployeesByDeptID"
+			parameterType="string"
+			resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		SELECT EMP_ID
+			 , EMP_NAME
+			 , PRFL
+			 , LGN_YN
+		  FROM EMPLOYEE
+		 WHERE DEPT_ID = #{_parameter}
+			
+	</select>
+	
+	<select id="getCanBeDeptLead" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		SELECT EMP_ID
+			 , EMP_NAME 
+		  FROM EMPLOYEE
+		 WHERE EMP_ID NOT IN (SELECT DISTINCT E.EMP_ID
+								FROM EMPLOYEE E
+							    LEFT JOIN DEPARTMENT D
+							      ON E.EMP_ID = D.DEPT_LEAD_ID
+							    LEFT JOIN TEAM T 
+								  ON T.TM_LEAD_ID = E.EMP_ID
+							   WHERE D.DEPT_LEAD_ID IS NOT NULL 
+							      OR T.TM_LEAD_ID IS NOT NULL)
+		   AND PSTN_ID IN ('105', '106','107','108','109','110')
+		
+	</select>
+
+	<select id="getChangeToDeptLead" parameterType="string" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		SELECT EMP_ID
+			 , EMP_NAME 
+		  FROM EMPLOYEE
+		 WHERE EMP_ID NOT IN (SELECT DISTINCT E.EMP_ID
+		 						FROM EMPLOYEE E
+							    LEFT JOIN DEPARTMENT D
+							      ON E.EMP_ID = D.DEPT_LEAD_ID
+							    LEFT JOIN TEAM T 
+								  ON T.TM_LEAD_ID = E.EMP_ID
+							   WHERE (D.DEPT_LEAD_ID IS NOT NULL 
+							      OR T.TM_LEAD_ID IS NOT NULL)
+							   AND D.DEPT_ID != #{_parameter})
+		   AND PSTN_ID IN ('105', '106','107','108','109','110')
+	</select>
+	
+	<update id="modifyEmployeePosition" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">														 
+		UPDATE EMPLOYEE
+		   SET PSTN_ID = #{pstnId}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	<update id="modifyEmployeeDept" parameterType="com.ktdsuniversity.edu.pms.department.vo.DepartmentVO">
+		UPDATE EMPLOYEE 
+		   SET DEPT_ID = #{deptId}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	<update id="modifyEmployeeTeam" parameterType="com.ktdsuniversity.edu.pms.team.vo.TeamVO">
+		UPDATE EMPLOYEE 
+		   SET TM_ID = #{tmId}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	<update id="modifyEmployeeJob" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		UPDATE EMPLOYEE
+		   SET JOB_ID = #{jobId}
+		 WHERE EMP_ID = #{empId}
+	</update>
+	
+	<select id="getDepartList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeDataVO">
+		SELECT DEPT_ID AS DATA_ID
+			 , DEPT_NAME AS DATA_NAME
+		FROM   DEPARTMENT
+	</select>
+	
+	<select id="getTeamList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeDataVO">
+		SELECT TM_ID AS DATA_ID
+			 , TM_NAME AS DATA_NAME
+		FROM   TEAM
+	</select>
+	
+	<select id="getJobList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeDataVO">
+		SELECT JOB_ID AS DATA_ID
+			 , JOB_NAME AS DATA_NAME
+		FROM   JOB
+	</select>
+	
+	<select id="getEmployeeGradeList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeDataVO">
+	    SELECT CMCD_ID AS DATA_ID,
+	           CMCD_NAME AS DATA_NAME
+	    FROM   COMMON_CODE
+	    WHERE  TO_NUMBER(CMCD_ID) > 100
+	</select>
+	
+	<select id="getEmployeeWorkStsList" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeDataVO">
+	    SELECT CMCD_ID AS DATA_ID,
+	           CMCD_NAME AS DATA_NAME
+	    FROM   COMMON_CODE
+	    WHERE  TO_NUMBER(CMCD_ID) > 200
+	</select>
+	
+	<select id="getEmployeeChangeHistory" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeChangeHistoryVO">
+		SELECT
+				HISTORY_ID
+			,	EMP_ID
+			,	TYPE
+			,	CUR_VALUE
+			,	PRE_VALUE
+			,	UPD_DATE
+		FROM	EMP_CHANGE_HISTORY
+		WHERE	EMP_ID = #{empId}
+	</select>
+	
+	<insert id="insertEmployeeChangeHistory" parameterType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeChangeHistoryVO">
+		INSERT INTO EMP_CHANGE_HISTORY
+		(	
+			HISTORY_ID
+		,	EMP_ID
+		,	TYPE
+		,	CUR_VALUE
+		,	PRE_VALUE
+		,	UPD_DATE
+		)
+		VALUES
+		(
+			SEQ_EMP_CHANGE_HISTORY_PK.NEXTVAL
+		,	#{empId}
+		,	#{type}
+		,	#{curValue}
+		,	#{preValue}
+		,	SYSDATE
+		)
+	</insert>
+	<select id="findEmployeeLoginInfoByDeptId" parameterType="String" resultType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+		SELECT EMP_NAME 
+			 , PRFL 
+			 , ORIGIN_PRFL_FILE_NAME 
+			 , LGN_YN 
+			 , EMP_ID 
+		  FROM EMPLOYEE
+		 WHERE DEPT_ID = #{_parameter}
+		   AND WORK_STS != '204'
+	</select>
+
+</mapper>

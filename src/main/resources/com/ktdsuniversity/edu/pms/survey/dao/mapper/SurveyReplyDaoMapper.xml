@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.survey.dao.SurveyReplyDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.survey.vo.SurveyReplyVO" 
+			   id="surveyReplyVOMap"
+			   autoMapping="true">
+		<id column="SRV_RPL_ID" property="srvRplId"/>
+		<association property="surveyQuestionVO"
+					 javaType="com.ktdsuniversity.edu.pms.survey.vo.SurveyQuestionVO">
+			<id column="SRV_ID" property="srvId"/>
+			<result column="PRJ_ID" property="prjId"/>
+			<result column="SRV_QST" property="srvQst"/>
+		</association>
+	</resultMap>
+
+	<insert id="insertSurveyAnswer" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyReplyVO">
+		INSERT INTO SURVEY_REPLY
+		 (SRV_RPL_ID
+		, SRV_ID
+		, SQP_ID
+		, SRV_RPL_CNTNT
+		, CRTR_ID
+		, CRT_DT
+		, DEL_YN)
+		VALUES
+		 ('SRV_RPL_' || TO_CHAR(SYSDATE, 'YYMMDD') || '_' || LPAD(SEQ_SURVEY_REPLY_PK.NEXTVAL, 6, '0')
+		, #{srvId}
+		, #{sqpId}
+		, #{srvRplCntnt}
+		, #{crtrId}
+		, SYSDATE
+		, 'N')
+	</insert>
+	
+	<select id="getAllReplies" parameterType="com.ktdsuniversity.edu.pms.survey.vo.SurveyReplyVO" resultMap="surveyReplyVOMap">
+		SELECT SRV_RPL_ID
+			 , SRV_ID
+			 , SQP_ID
+			 , SRV_RPL_CNTNT
+			 , CRTR_ID
+			 , CRT_DT
+			 , MDFR_ID
+			 , DEL_YN
+		  FROM SURVEY_REPLY
+		 WHERE SRV_ID = #{srvId}
+		   AND DEL_YN = 'N'
+	</select>
+	
+	<select id="getDoneEmpIdList" parameterType="String" resultType="String">
+		SELECT DISTINCT R.CRTR_ID 
+		  FROM SURVEY_REPLY R
+		 INNER JOIN SURVEY_QUESTION Q
+		    ON R.SRV_ID = Q.SRV_ID 
+		 WHERE Q.PRJ_ID = #{_parameter}
+	</select>
+
+	<select id="getallDescriptiveTypeAnswer" parameterType="String" resultType="com.ktdsuniversity.edu.pms.survey.vo.SurveyReplyVO">
+		SELECT SR.SRV_ID
+			 , SR.SRV_RPL_CNTNT
+		  FROM SURVEY_REPLY SR
+		  JOIN SURVEY_QUESTION SQ
+		    ON SR.SRV_ID = SQ.SRV_ID 
+		 WHERE SQ.TYPE_YN = 'Y'
+		   AND SQ.PRJ_ID = #{_parameter}
+		   AND SR.DEL_YN = 'N'
+		   AND SR.SRV_RPL_CNTNT IS NOT NULL
+	</select>
+</mapper>

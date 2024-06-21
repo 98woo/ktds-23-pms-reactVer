@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.supply.dao.SupplyLogDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.supply.vo.SupplyLogVO"
+			   id="SupplyLogVOMap"
+			   autoMapping="true">
+		<id column="SPL_LOG_ID" property="splLogId" />
+		<association property="supplyVO"
+					 javaType="com.ktdsuniversity.edu.pms.supply.vo.SupplyVO">
+			<id column="SPL_ID" property="splId" />
+			<result column="SPL_NAME" property="splName" />
+			<result column="SPL_CTGR" property="splCtgr" />
+			<result column="SPL_PRICE" property="splPrice" />
+		</association>
+		<association property="employeeVO"
+					 javaType="com.ktdsuniversity.edu.pms.employee.vo.EmployeeVO">
+			<id column="EMP_ID" property="empId" />
+			<result column="EMP_NAME" property="empName" />
+			<result column="EMAIL" property="email" />
+		</association>
+	</resultMap>
+	
+	<select id="searchSupplyLogAllCount"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM (SELECT sl.SPL_LOG_ID 
+					 , sl.SPL_ID 
+					 , sl.REQR_ID 
+					 , sl.REQ_CNT 
+					 , sl.REQ_DT 
+					 , sl.REQ_RSN 
+					 , sl.DEL_YN 
+					 , s.SPL_NAME 
+					 , s.SPL_CTGR 
+					 , s.SPL_PRICE
+					 , e.EMP_ID
+					 , e.EMP_NAME
+					 , e.EMAIL
+				  FROM SUPPLY_LOG sl 
+				  JOIN SUPPLY s 
+				    ON s.SPL_ID = sl.SPL_ID
+				  JOIN EMPLOYEE e
+				    ON e.EMP_ID = sl.REQR_ID)
+		 WHERE DEL_YN = 'N'
+	</select>
+	
+	<select id="searchAllSupplyLog"
+			parameterType="com.ktdsuniversity.edu.pms.supply.vo.SearchSupplyVO"
+			resultMap="SupplyLogVOMap">
+		SELECT SPL_LOG_ID 
+			 , SPL_ID 
+			 , REQR_ID 
+			 , REQ_CNT 
+			 , REQ_DT 
+			 , REQ_RSN 
+			 , DEL_YN 
+			 , SPL_NAME 
+			 , SPL_CTGR 
+			 , SPL_PRICE
+			 , EMP_ID
+			 , EMP_NAME
+			 , EMAIL
+		  FROM (SELECT sl.SPL_LOG_ID 
+					 , sl.SPL_ID 
+					 , sl.REQR_ID 
+					 , sl.REQ_CNT 
+					 , sl.REQ_DT 
+					 , sl.REQ_RSN 
+					 , sl.DEL_YN 
+					 , s.SPL_NAME 
+					 , s.SPL_CTGR 
+					 , s.SPL_PRICE
+					 , e.EMP_ID
+					 , e.EMP_NAME
+					 , e.EMAIL
+				  FROM SUPPLY_LOG sl 
+				  JOIN SUPPLY s 
+				    ON s.SPL_ID = sl.SPL_ID
+				  JOIN EMPLOYEE e
+				    ON e.EMP_ID = sl.REQR_ID)
+		 WHERE DEL_YN = 'N'
+	</select>
+	
+</mapper>

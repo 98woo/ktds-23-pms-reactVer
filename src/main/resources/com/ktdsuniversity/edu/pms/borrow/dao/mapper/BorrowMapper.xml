@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktdsuniversity.edu.pms.borrow.dao.BorrowDao">
+
+	<resultMap type="com.ktdsuniversity.edu.pms.borrow.vo.BorrowVO" id="borrowVOMap"  autoMapping="true">
+		<id column="BRRW_HIST_ID" property="brrwHistId" />
+		<association property="productVO" javaType="com.ktdsuniversity.edu.pms.product.vo.ProductVO">
+			<id column="PRDT_ID" property="prdtId" />
+			<result column="PRDT_NAME" property="prdtName" />
+			<result column="ONCE_YN" property="onceYn" />
+			<result column="PRDT_CTGR" property="prdtCtgr" />
+		</association>
+		<association property="productManagementVO" javaType="com.ktdsuniversity.edu.pms.product.vo.ProductManagementVO">
+			<id column="PRDT_MNG_ID" property="prdtMngId" />
+			<result column="BRRW_YN" property="brrwYn" />
+		</association>
+		<association property="approvalVO" javaType="com.ktdsuniversity.edu.pms.approval.vo.ApprovalVO">
+			<id column="APPR_ID" property="apprId"/>
+			<result column="DMD_ID" property="dmdId"/>
+			<result column="APPR_DEL_YN" property="delYn"/>
+		</association>
+		<association property="approvalDetailVO" javaType="com.ktdsuniversity.edu.pms.approval.vo.ApprovalDetailVO">
+			<id column="APPR_DTL_ID" property="apprDtlId"/>
+			<result column="APPR_ID" property="apprId"/>
+			<result column="APPR_DTL_DEL_YN" property="delYn"/>
+		</association>
+	</resultMap>
+
+	<select id="getBorrowCount" resultType="_int" parameterType="string">
+		SELECT COUNT(1)
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		 INNER JOIN PRODUCT P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.DEL_YN = 'N'
+		   AND BH.BRRW_ID = #{_parameter}
+		   AND BH.RTN_DT IS NULL
+		   AND P.ONCE_YN = 'N'
+		   AND PM.LOST_YN = 'N'
+	</select>
+	<select id="getUserListCnt" parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.DEL_YN = 'N'
+		   AND BH.BRRW_ID = #{employeeVO.empId}
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "productManagementId"'>
+		   AND BH.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+
+	
+	<select id="searchBorrowAllCount" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.DEL_YN = 'N'
+		   AND BH.BRRW_ID = #{employeeVO.empId}
+		   AND BH.RTN_DT IS NULL
+		   AND P.ONCE_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "productManagementId"'>
+		   AND BH.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+	
+	
+
+	<select id="searchAllUserRentalState" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultMap="borrowVOMap">
+		<include refid="Common.pagenate_header" />
+		SELECT BH.BRRW_HIST_ID
+			 , BH.BRRW_ID
+			 , BH.PRDT_MNG_ID
+			 , TO_CHAR(BH.BRRW_DT, 'YYYY-MM-DD') BRRW_DT
+			 , TO_CHAR(BH.RTN_DT, 'YYYY-MM-DD') RTN_DT
+			 , BH.DEL_YN
+			 , P.PRDT_NAME
+			 , P.ONCE_YN 
+			 , P.PRDT_CTGR
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID 
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID 
+		 WHERE BH.DEL_YN = 'N'
+		   AND BH.BRRW_ID = #{employeeVO.empId}
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "productManagementId"'>
+		   AND BH.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+		 ORDER BY BH.BRRW_DT DESC
+		<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<select id="getAllListCnt" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.DEL_YN ='N'
+		   AND P.ONCE_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productManagementId"'>
+		   AND PM.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "borrowId"'>
+		   AND BH.BRRW_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+	
+	<select id="searchProductManagementStateAllCount" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultType="_int">
+		SELECT COUNT(1)
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.DEL_YN ='N'
+		   AND BH.RTN_DT IS NULL
+		   AND P.ONCE_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productManagementId"'>
+		   AND PM.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "borrowId"'>
+		   AND BH.BRRW_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+	</select>
+
+	<select id="searchAllProductManagementState" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultMap="borrowVOMap">
+		<include refid="Common.pagenate_header" />
+		SELECT BH.BRRW_HIST_ID
+			 , BH.BRRW_ID
+			 , BH.PRDT_MNG_ID
+			 , TO_CHAR(BH.BRRW_DT, 'YYYY-MM-DD') BRRW_DT
+			 , TO_CHAR(BH.RTN_DT, 'YYYY-MM-DD') RTN_DT
+			 , BH.DEL_YN
+			 , P.PRDT_NAME
+			 , P.ONCE_YN 
+			 , P.PRDT_CTGR
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID 
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID 
+		 WHERE BH.DEL_YN = 'N'
+		   AND P.ONCE_YN = 'N'
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productManagementId"'>
+		   AND PM.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "borrowId"'>
+		   AND BH.BRRW_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+		ORDER BY BH.BRRW_DT DESC
+		<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<update id="returnOneItem" parameterType="string">
+		UPDATE BORROW_HISTORY 
+		   SET RTN_DT = SYSDATE 
+		 WHERE BRRW_HIST_ID = #{_parameter}
+	</update>
+	
+	<!-- PSH0422 -->
+	<insert id="newBrrwPrdtByAppr" parameterType="list">
+		INSERT INTO BORROW_HISTORY
+		     ( BRRW_HIST_ID
+		     , BRRW_ID
+		     , PRDT_MNG_ID
+		     , BRRW_DT
+		     , RTN_DT
+		     , DEL_YN)
+		     SELECT 'BRRW_HT_' || TO_CHAR(SYSDATE, 'YYMMDD')
+		     || '_' || LPAD(SEQ_BRRW_HT_PK.NEXTVAL, 6, '0'), BH.*
+		 FROM (
+		<foreach collection="list" item="borrowVO" separator="UNION ALL">
+			SELECT
+			#{borrowVO.brrwId} AS BRRW_ID
+			, #{borrowVO.prdtMngId} AS PRDT_MNG_ID
+			, SYSDATE AS BRRW_DT
+			, NULL AS RTN_DT
+			, 'N' AS DEL_YN
+			FROM DUAL
+		</foreach>
+		) BH
+	</insert>
+
+	<select id="getIsNotReturnCount" resultType="_int" parameterType="string">
+		SELECT count(1)
+		  FROM BORROW_HISTORY BH
+		 WHERE BH.PRDT_MNG_ID IN (SELECT DISTINCT AD.PRDT_ID
+								    FROM APPROVAL A
+								   INNER JOIN APPROVAL_DETAIL AD
+									  ON A.APPR_ID = AD.APPR_ID
+								   WHERE A.DMD_ID = #{_parameter}
+								     AND A.DEL_YN = 'N'
+								     AND AD.DEL_YN = 'N')
+		AND BH.DEL_YN = 'N'
+		AND BH.RTN_DT IS NULL
+	</select>
+
+	<update id="returnOneItemByAppr" parameterType="string">
+		UPDATE BORROW_HISTORY
+		   SET RTN_DT = SYSDATE
+		 WHERE PRDT_MNG_ID IN (SELECT PRDT_ID
+		  						FROM APPROVAL_DETAIL
+		 					   WHERE APPR_ID = #{_parameter})
+	</update>
+
+	<!-- 대여중인 모든 품목 불러오기	-->
+	<select id="getUserRentalStateForAppr" resultMap="borrowVOMap" parameterType="string">
+		SELECT BH.BRRW_HIST_ID
+		, BH.BRRW_ID
+		, BH.PRDT_MNG_ID
+		, TO_CHAR(BH.BRRW_DT, 'YYYY-MM-DD') BRRW_DT
+		, TO_CHAR(BH.RTN_DT, 'YYYY-MM-DD') RTN_DT
+		, BH.DEL_YN
+		, P.PRDT_NAME
+		, P.PRDT_CTGR
+		FROM BORROW_HISTORY BH
+		INNER JOIN PRODUCT_MANAGEMENT PM
+		ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID
+		INNER JOIN PRODUCT P
+		ON P.PRDT_ID = PM.PRDT_ID
+		WHERE BH.DEL_YN = 'N'
+		AND BH.RTN_DT IS NULL
+		AND BH.BRRW_ID = #{_parameter}
+	</select>
+	
+	<!-- 변경신청한 비품을 제외한 대여목록 불러오기 -->
+	<select id="getUserRentalNotAppr" resultMap="borrowVOMap" parameterType="com.ktdsuniversity.edu.pms.approval.vo.ApprovalVO">
+		SELECT PM.PRDT_MNG_ID
+		     , P.PRDT_CTGR
+		     , P.PRDT_NAME
+		     , BH.BRRW_DT
+		     , BH.BRRW_ID
+		  FROM PRODUCT_MANAGEMENT PM
+		 INNER JOIN PRODUCT P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 INNER JOIN BORROW_HISTORY BH
+		    ON PM.PRDT_MNG_ID = BH.PRDT_MNG_ID
+		 WHERE BRRW_ID = #{_parameter}
+		   AND BH.DEL_YN = 'N'
+		   AND P.ONCE_YN = 'N'
+		   AND PM.BRRW_YN = 'Y'
+		   AND BH.RTN_DT IS NULL
+		   AND PM.PRDT_MNG_ID NOT IN (SELECT AD.PRDT_ID
+		                                FROM APPROVAL A
+		                               INNER JOIN APPROVAL_DETAIL AD
+		                                  ON A.APPR_ID  = AD.APPR_ID
+		                               WHERE DMD_ID = #{_parameter}
+		                                 AND AD.PRDT_ID IS NOT NULL)
+	</select>
+	
+	<!-- 추가 변경 신청할 비품 선택 -->
+	<select id="getBorrowProduct" parameterType="list" resultMap="borrowVOMap">
+		SELECT PM.PRDT_MNG_ID
+			 , P.PRDT_CTGR
+			 , P.PRDT_NAME
+			 , BH.BRRW_DT
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON PM.PRDT_MNG_ID = BH.PRDT_MNG_ID
+		 INNER JOIN PRODUCT P
+		    ON P.PRDT_ID = PM.PRDT_ID
+		 WHERE BH.PRDT_MNG_ID IN
+			<foreach collection="list" item="prdtMngId" open="(" close=")" separator=", ">
+				#{prdtMngId}
+			</foreach>
+		   AND BH.RTN_DT IS NULL
+	</select>
+	
+	<!-- YSH0424 -->
+	<select id="selectBrrwHistId" resultType="string">
+		SELECT 'BRRW_HT_'||TO_CHAR(SYSDATE, 'YYMMDD') || '_' || LPAD(SEQ_PRDT_PK.NEXTVAL, 6, '0')
+		  FROM DUAL
+	</select>
+	
+	<insert id="insertNewBorrowHist" parameterType="com.ktdsuniversity.edu.pms.borrow.vo.BorrowVO">
+		INSERT INTO BORROW_HISTORY
+			 ( BRRW_HIST_ID
+		     , BRRW_ID
+		     , PRDT_MNG_ID
+		     , BRRW_DT
+		     , RTN_DT
+		     , DEL_YN)
+			VALUES
+			 (#{brrwHistId}
+			, #{brrwId}
+			, #{prdtMngId}
+			, #{brrwDt}
+			, #{rtnDt}
+			, 'N')
+	</insert>
+	
+	<select id="searchProductManageStateNotReturn" 
+			parameterType="com.ktdsuniversity.edu.pms.borrow.vo.SearchBorrowVO"
+			resultMap="borrowVOMap">
+		<include refid="Common.pagenate_header" />
+		SELECT BH.BRRW_HIST_ID
+			 , BH.BRRW_ID
+			 , BH.PRDT_MNG_ID
+			 , TO_CHAR(BH.BRRW_DT, 'YYYY-MM-DD') BRRW_DT
+			 , TO_CHAR(BH.RTN_DT, 'YYYY-MM-DD') RTN_DT
+			 , BH.DEL_YN
+			 , P.PRDT_NAME
+			 , P.ONCE_YN 
+			 , P.PRDT_CTGR
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON BH.PRDT_MNG_ID = PM.PRDT_MNG_ID 
+		 INNER JOIN (SELECT P_I.*
+						  , REPLACE(P_I.PRDT_NAME, ' ', '') AS SEARCH_PRDT_NAME
+						  , REPLACE(#{searchKeyword}, ' ', '') AS SEARCH_KEYWORD
+					   FROM PRODUCT P_I) P
+		    ON P.PRDT_ID = PM.PRDT_ID 
+		 WHERE BH.DEL_YN = 'N'
+		   AND P.ONCE_YN = 'N'
+		   AND BH.RTN_DT IS NULL
+		<if test='searchKeyword != null and searchKeyword != ""'>
+			<choose>
+				<when test='searchType == "productManagementId"'>
+		   AND PM.PRDT_MNG_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+				<when test='searchType == "productName"'>
+		   AND SEARCH_PRDT_NAME LIKE '%' || SEARCH_KEYWORD || '%'
+				</when>
+				<when test='searchType == "borrowId"'>
+		   AND BH.BRRW_ID LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+		ORDER BY BH.BRRW_DT DESC
+		<include refid="Common.pagenate_footer" />
+	</select>
+	
+	<update id="changeState" parameterType="string">
+		UPDATE BORROW_HISTORY 
+		   SET RTN_DT = SYSDATE 
+		 WHERE PRDT_MNG_ID = #{_parameter}
+		   AND RTN_DT IS NULL
+	</update>
+	
+	<select id="getUserRentalStateForMain" parameterType="string" resultMap="borrowVOMap">
+		SELECT P.PRDT_NAME
+		     , BH.PRDT_MNG_ID 
+		     , P.PRDT_CTGR 
+		     , TO_CHAR(BH.BRRW_DT, 'YYYY-MM-DD') BRRW_DT
+		  FROM BORROW_HISTORY BH
+		 INNER JOIN PRODUCT_MANAGEMENT PM
+		    ON PM.PRDT_MNG_ID = BH.PRDT_MNG_ID 
+		 INNER JOIN PRODUCT P
+		    ON P.PRDT_ID = PM.PRDT_ID 
+		 WHERE P.ONCE_YN = 'N'
+		   AND BH.RTN_DT IS NULL
+		   AND BH.BRRW_ID = #{_parameter}
+	</select>
+	
+</mapper>
